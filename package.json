@@ -1,7 +1,7 @@
 {
   "name": "finan",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -9,15 +9,44 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~53.0.20",
+    "@expo/metro-runtime": "~5.0.4",
+    "@react-navigation/bottom-tabs": "^6.6.1",
+    "@react-navigation/native": "^6.1.18",
+    "@react-navigation/stack": "^6.4.1",
+    "bip39": "^3.1.0",
+    "buffer": "^6.0.3",
+    "ethers": "^6.13.2",
+    "expo": "~53.0.0",
+    "expo-crypto": "~14.1.5",
+    "expo-secure-store": "~14.2.3",
     "expo-status-bar": "~2.2.3",
+    "get-it": "^8.6.5",
+    "nativewind": "^2.0.11",
     "react": "19.0.0",
-    "react-native": "0.79.5"
+    "react-dom": "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-reanimated": "~3.17.4",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-web": "^0.20.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@types/react": "~19.0.10",
-    "typescript": "~5.8.3"
+    "@babel/core": "^7.20.0",
+    "@types/react": "~18.2.45",
+    "@types/react-native": "~0.73.0",
+    "tailwindcss": "3.3.2",
+    "typescript": "~5.3.3"
   },
+  "keywords": [
+    "crypto",
+    "wallet",
+    "react-native",
+    "expo",
+    "vietnam"
+  ],
+  "author": "Finan Team",
+  "license": "MIT",
+  "description": "Crypto wallet app for Vietnamese users",
   "private": true
 }
