@@ -9,49 +9,60 @@ import { CreateWalletScreen } from '../screens/CreateWalletScreen';
 import { ImportWalletScreen } from '../screens/ImportWalletScreen';
 import { SendScreen } from '../screens/SendScreen';
 import { ReceiveScreen } from '../screens/ReceiveScreen';
+import { SetupPinScreen } from '../screens/SetupPinScreen';
+import { BiometricPromptScreen } from '../screens/BiometricPromptScreen';
+import { LoginScreen } from '../screens/LoginScreen';
 import { TabNavigator } from './TabNavigator';
 
 import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
 import { CheckWalletExistsEvent } from '../blocs/wallet_onboarding_event';
 import { WalletOnboardingState, WalletExistsState, WalletNotExistsState, WalletOnboardingLoading } from '../blocs/wallet_onboarding_state';
 import { ServiceLocator } from '../../core/di/service_locator';
+import { AuthService } from '../../data/services/auth_service';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export const AppNavigator: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasWallet, setHasWallet] = useState(false);
+  const [hasPinSet, setHasPinSet] = useState(false);
+  const [authService] = useState(() => new AuthService());
   const [walletBloc, setWalletBloc] = useState<any>(null);
 
   useEffect(() => {
-    // Initialize walletBloc from ServiceLocator
-    try {
-      const bloc = ServiceLocator.get('WalletOnboardingBloc') as WalletOnboardingBloc;
-      setWalletBloc(bloc);
-      
-      const handleStateChange = (state: WalletOnboardingState) => {
-        if (state instanceof WalletOnboardingLoading) {
-          setIsLoading(true);
-        } else if (state instanceof WalletExistsState) {
-          setIsLoading(false);
-          setHasWallet(true);
-        } else if (state instanceof WalletNotExistsState) {
-          setIsLoading(false);
-          setHasWallet(false);
-        }
-      };
+    const initializeApp = async () => {
+      try {
+        const bloc = ServiceLocator.get<WalletOnboardingBloc>('WalletOnboardingBloc');
+        setWalletBloc(bloc);
 
-      bloc.addListener(handleStateChange);
-      
-      // Check if wallet exists on app launch
-      bloc.add(new CheckWalletExistsEvent());
+        const handleStateChange = async (state: WalletOnboardingState) => {
+          if (state instanceof WalletExistsState) {
+            setHasWallet(true);
+            // Kiểm tra trạng thái PIN khi ví đã tồn tại
+            const pinExists = await authService.hasPinSet();
+            setHasPinSet(pinExists);
+            setIsLoading(false);
+          } else if (state instanceof WalletNotExistsState) {
+            setHasWallet(false);
+            setHasPinSet(false);
+            setIsLoading(false);
+          }
+        };
 
-      return () => bloc.removeListener(handleStateChange);
-    } catch (error) {
-      console.error('Failed to initialize WalletOnboardingBloc:', error);
-      setIsLoading(false);
-    }
-  }, []);
+        bloc.addListener(handleStateChange);
+        
+        // Check if wallet exists on app launch
+        bloc.add(new CheckWalletExistsEvent());
+
+        return () => bloc.removeListener(handleStateChange);
+      } catch (error) {
+        console.error('Failed to initialize app:', error);
+        setIsLoading(false);
+      }
+    };
+
+    initializeApp();
+  }, [authService]);
 
   if (isLoading) {
     return (
@@ -68,7 +79,11 @@ export const AppNavigator: React.FC = () => {
           headerShown: false,
           gestureEnabled: true,
         }}
-        initialRouteName={hasWallet ? 'MainTabs' : 'Welcome'}
+        initialRouteName={
+          !hasWallet ? 'Welcome' : 
+          !hasPinSet ? 'SetupPin' : 
+          'Login'
+        }
       >
         {/* Onboarding flow */}
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
@@ -107,6 +122,26 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen 
           name="MainTabs" 
           component={TabNavigator}
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false, // Không cho phép swipe back từ MainTabs
+          }}
+        />
+        
+        {/* Authentication screens */}
+        <Stack.Screen 
+          name="SetupPin" 
+          component={SetupPinScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="BiometricPrompt" 
+          component={BiometricPromptScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="Login" 
+          component={LoginScreen}
           options={{ headerShown: false }}
         />
         

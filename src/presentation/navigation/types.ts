@@ -5,6 +5,9 @@ export type RootStackParamList = {
   MainTabs: undefined;
   Send: undefined;
   Receive: undefined;
+  SetupPin: undefined;
+  BiometricPrompt: undefined;
+  Login: undefined;
 };
 
 export type TabParamList = {

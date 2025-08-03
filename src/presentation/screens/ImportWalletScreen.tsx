@@ -56,7 +56,7 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
           'Ví đã được khôi phục thành công!',
           [{ text: 'OK', onPress: () => {
             // Navigate to dashboard
-            navigation.navigate('MainTabs');
+            navigation.navigate('SetupPin');
           }}]
         );
       } else if (state instanceof WalletOnboardingError) {

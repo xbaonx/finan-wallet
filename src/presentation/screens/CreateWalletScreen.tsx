@@ -91,8 +91,8 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
         { 
           text: 'Đã sao lưu', 
           onPress: () => {
-            // Navigate to dashboard
-            navigation.navigate('MainTabs');
+            // Navigate to PIN setup after wallet creation
+            navigation.navigate('SetupPin');
           }
         }
       ]

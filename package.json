@@ -25,6 +25,7 @@
     "expo": "~53.0.0",
     "expo-clipboard": "~7.1.5",
     "expo-crypto": "~14.1.5",
+    "expo-local-authentication": "~16.0.5",
     "expo-secure-store": "~14.2.3",
     "expo-status-bar": "~2.2.3",
     "get-it": "^8.6.5",
