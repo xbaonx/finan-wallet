@@ -4,12 +4,16 @@
 import { CryptoService } from '../../data/services/crypto_service';
 import { SecureStorageService } from '../../data/services/secure_storage_service';
 import { MoralisApiService } from '../../data/services/moralis_api_service';
+import { OneInchApiService } from '../../data/services/oneinch_api_service';
+import { CoinGeckoApiService } from '../../data/services/coingecko_api_service';
 
 // Repositories
 import { WalletRepository } from '../../domain/repositories/wallet_repository';
 import { WalletRepositoryImpl } from '../../data/repositories/wallet_repository_impl';
 import { TokenRepository } from '../../domain/repositories/token_repository';
 import { TokenRepositoryImpl } from '../../data/repositories/token_repository_impl';
+import { SwapRepository } from '../../domain/repositories/swap_repository';
+import { SwapRepositoryImpl } from '../../data/repositories/swap_repository_impl';
 
 // Use Cases
 import {
@@ -17,6 +21,8 @@ import {
   CreateWalletUseCase,
   ImportWalletUseCase,
   GetWalletUseCase,
+  GetWalletCredentialsUseCase,
+  LogoutWalletUseCase,
 } from '../../domain/usecases/wallet_usecases';
 
 import {
@@ -25,9 +31,20 @@ import {
   RefreshWalletDataUseCase,
 } from '../../domain/usecases/dashboard_usecases';
 
+import {
+  GetSupportedTokensUseCase,
+  GetTokenBalanceUseCase,
+  GetTokenPriceUseCase,
+  GetSwapQuoteUseCase,
+  CheckTokenAllowanceUseCase,
+  ApproveTokenUseCase,
+  PerformSwapUseCase,
+} from '../../domain/usecases/swap_usecases';
+
 // BLoCs
 import { WalletOnboardingBloc } from '../../presentation/blocs/wallet_onboarding_bloc';
 import { DashboardBloc } from '../../presentation/blocs/dashboard_bloc';
+import { SwapBloc } from '../../presentation/blocs/swap_bloc';
 
 class ServiceContainer {
   private static instance: ServiceContainer;
@@ -70,6 +87,8 @@ export class ServiceLocator {
     container.register('CryptoService', () => new CryptoService());
     container.register('SecureStorageService', () => new SecureStorageService());
     container.register('MoralisApiService', () => new MoralisApiService());
+    container.register('OneInchApiService', () => new OneInchApiService('lfkI2Bca3G4qdGpiFx62yuoDS2hXetVu'));
+    container.register('CoinGeckoApiService', () => new CoinGeckoApiService());
 
     // Repositories
     container.register('WalletRepository', () => new WalletRepositoryImpl(
@@ -78,6 +97,12 @@ export class ServiceLocator {
     ));
     
     container.register('TokenRepository', () => new TokenRepositoryImpl(
+      container.get('MoralisApiService')
+    ));
+    
+    container.register('SwapRepository', () => new SwapRepositoryImpl(
+      container.get('OneInchApiService'),
+      container.get('CoinGeckoApiService'),
       container.get('MoralisApiService')
     ));
 
@@ -98,6 +123,14 @@ export class ServiceLocator {
       container.get('WalletRepository')
     ));
     
+    container.register('GetWalletCredentialsUseCase', () => new GetWalletCredentialsUseCase(
+      container.get('WalletRepository')
+    ));
+    
+    container.register('LogoutWalletUseCase', () => new LogoutWalletUseCase(
+      container.get('WalletRepository')
+    ));
+    
     container.register('GetWalletBalanceUseCase', () => new GetWalletBalanceUseCase(
       container.get('TokenRepository'),
       container.get('WalletRepository')
@@ -111,18 +144,60 @@ export class ServiceLocator {
       container.get('TokenRepository'),
       container.get('WalletRepository')
     ));
+    
+    // Swap Use Cases
+    container.register('GetSupportedTokensUseCase', () => new GetSupportedTokensUseCase(
+      container.get('SwapRepository')
+    ));
+    
+    container.register('GetTokenBalanceUseCase', () => new GetTokenBalanceUseCase(
+      container.get('SwapRepository')
+    ));
+    
+    container.register('GetTokenPriceUseCase', () => new GetTokenPriceUseCase(
+      container.get('SwapRepository')
+    ));
+    
+    container.register('GetSwapQuoteUseCase', () => new GetSwapQuoteUseCase(
+      container.get('SwapRepository')
+    ));
+    
+    container.register('CheckTokenAllowanceUseCase', () => new CheckTokenAllowanceUseCase(
+      container.get('SwapRepository')
+    ));
+    
+    container.register('ApproveTokenUseCase', () => new ApproveTokenUseCase(
+      container.get('SwapRepository')
+    ));
+    
+    container.register('PerformSwapUseCase', () => new PerformSwapUseCase(
+      container.get('SwapRepository')
+    ));
 
     // BLoCs
     container.register('WalletOnboardingBloc', () => new WalletOnboardingBloc(
       container.get('CheckWalletExistsUseCase'),
       container.get('CreateWalletUseCase'),
-      container.get('ImportWalletUseCase')
+      container.get('ImportWalletUseCase'),
+      container.get('GetWalletCredentialsUseCase'),
+      container.get('GetWalletUseCase')
     ), false); // Not singleton for BLoCs
     
     container.register('DashboardBloc', () => new DashboardBloc(
       container.get('GetWalletBalanceUseCase'),
       container.get('GetCurrentWalletUseCase'),
       container.get('RefreshWalletDataUseCase')
+    ), false); // Not singleton for BLoCs
+    
+    container.register('SwapBloc', () => new SwapBloc(
+      container.get('GetSupportedTokensUseCase'),
+      container.get('GetTokenBalanceUseCase'),
+      container.get('GetTokenPriceUseCase'),
+      container.get('GetSwapQuoteUseCase'),
+      container.get('CheckTokenAllowanceUseCase'),
+      container.get('ApproveTokenUseCase'),
+      container.get('PerformSwapUseCase'),
+      container.get('GetCurrentWalletUseCase')
     ), false); // Not singleton for BLoCs
   }
 

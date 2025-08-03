@@ -12,7 +12,9 @@ import {
   Alert,
 } from 'react-native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { TabParamList } from '../navigation/types';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { TabParamList, RootStackParamList } from '../navigation/types';
 import { DashboardBloc } from '../blocs/dashboard_bloc';
 import { LoadDashboardEvent, RefreshDashboardEvent } from '../blocs/dashboard_event';
 import { DashboardState, DashboardLoading, DashboardLoaded, DashboardRefreshing, DashboardError } from '../blocs/dashboard_state';
@@ -21,7 +23,10 @@ import { testMoralisAPI } from '../../data/services/moralis_test';
 import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
 import { TokenEntity } from '../../domain/entities/token_entity';
 
-type DashboardScreenNavigationProp = BottomTabNavigationProp<TabParamList, 'Dashboard'>;
+type DashboardScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Dashboard'>,
+  StackNavigationProp<RootStackParamList>
+>;
 
 interface Props {
   navigation: DashboardScreenNavigationProp;
@@ -95,13 +100,13 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSend = () => {
-    // Navigate to send screen (to be implemented)
-    Alert.alert('Thông báo', 'Tính năng gửi sẽ được thêm trong phiên bản tiếp theo');
+    // Navigate to send screen
+    navigation.navigate('Send');
   };
 
   const handleReceive = () => {
-    // Navigate to receive screen (to be implemented)
-    Alert.alert('Thông báo', 'Tính năng nhận sẽ được thêm trong phiên bản tiếp theo');
+    // Navigate to receive screen
+    navigation.navigate('Receive');
   };
 
   const handleSwap = () => {

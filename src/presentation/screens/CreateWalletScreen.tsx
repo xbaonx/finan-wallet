@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
 import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
@@ -49,14 +50,14 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
         setIsLoading(true);
       } else if (state instanceof WalletCreatedState) {
         setIsLoading(false);
-        // In a real implementation, we'd get the mnemonic from the state
-        // For now, we'll generate a mock mnemonic for display
-        const mockMnemonic = [
-          'abandon', 'ability', 'able', 'about', 'above', 'absent',
-          'absorb', 'abstract', 'absurd', 'abuse', 'access', 'accident'
-        ];
-        setMnemonic(mockMnemonic);
-        setShowMnemonic(true);
+        // Get the real mnemonic from the state
+        if (state.mnemonic) {
+          const mnemonicWords = state.mnemonic.split(' ');
+          setMnemonic(mnemonicWords);
+          setShowMnemonic(true);
+        } else {
+          Alert.alert('Lỗi', 'Không thể lấy cụm từ khôi phục. Vui lòng thử lại.');
+        }
       } else if (state instanceof WalletOnboardingError) {
         setIsLoading(false);
         Alert.alert('Lỗi', state.message);
@@ -98,9 +99,14 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
-  const copyMnemonic = () => {
-    // In a real implementation, copy to clipboard
-    Alert.alert('Đã sao chép', 'Cụm từ khôi phục đã được sao chép');
+  const copyMnemonic = async () => {
+    try {
+      const mnemonicString = mnemonic.join(' ');
+      await Clipboard.setString(mnemonicString);
+      Alert.alert('Đã sao chép', 'Cụm từ khôi phục đã được sao chép vào clipboard');
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể sao chép cụm từ khôi phục');
+    }
   };
 
   if (showMnemonic) {

@@ -3,6 +3,8 @@ export type RootStackParamList = {
   CreateWallet: undefined;
   ImportWallet: undefined;
   MainTabs: undefined;
+  Send: undefined;
+  Receive: undefined;
 };
 
 export type TabParamList = {

@@ -1,6 +1,6 @@
 import { WalletOnboardingEvent, CheckWalletExistsEvent, CreateWalletEvent, ImportWalletEvent, ResetOnboardingEvent } from './wallet_onboarding_event';
 import { WalletOnboardingState, WalletOnboardingInitial, WalletOnboardingLoading, WalletExistsState, WalletNotExistsState, WalletCreatedState, WalletImportedState, WalletOnboardingError } from './wallet_onboarding_state';
-import { CheckWalletExistsUseCase, CreateWalletUseCase, ImportWalletUseCase } from '../../domain/usecases/wallet_usecases';
+import { CheckWalletExistsUseCase, CreateWalletUseCase, ImportWalletUseCase, GetWalletCredentialsUseCase, GetWalletUseCase } from '../../domain/usecases/wallet_usecases';
 
 export class WalletOnboardingBloc {
   private _state: WalletOnboardingState = new WalletOnboardingInitial();
@@ -9,7 +9,9 @@ export class WalletOnboardingBloc {
   constructor(
     private checkWalletExistsUseCase: CheckWalletExistsUseCase,
     private createWalletUseCase: CreateWalletUseCase,
-    private importWalletUseCase: ImportWalletUseCase
+    private importWalletUseCase: ImportWalletUseCase,
+    private getWalletCredentialsUseCase: GetWalletCredentialsUseCase,
+    private getWalletUseCase: GetWalletUseCase
   ) {}
 
   get state(): WalletOnboardingState {
@@ -52,8 +54,13 @@ export class WalletOnboardingBloc {
       
       if (hasWallet) {
         // Get wallet info and emit exists state
-        // Note: We'll need to get the wallet details in a real implementation
-        this.emit(new WalletNotExistsState()); // For now, always show onboarding
+        const wallet = await this.getWalletUseCase.execute();
+        if (wallet) {
+          this.emit(new WalletExistsState(wallet));
+        } else {
+          // Wallet exists but can't retrieve info, show onboarding
+          this.emit(new WalletNotExistsState());
+        }
       } else {
         this.emit(new WalletNotExistsState());
       }
@@ -69,9 +76,10 @@ export class WalletOnboardingBloc {
       const wallet = await this.createWalletUseCase.execute(event.walletName);
       
       // Get mnemonic from wallet credentials
-      // Note: In a real implementation, we'd need to get the mnemonic
-      // For now, we'll pass an empty string as placeholder
-      this.emit(new WalletCreatedState(wallet, ''));
+      const credentials = await this.getWalletCredentialsUseCase.execute(wallet.id);
+      const mnemonic = credentials?.mnemonic || '';
+      
+      this.emit(new WalletCreatedState(wallet, mnemonic));
     } catch (error) {
       this.emit(new WalletOnboardingError(`Lỗi tạo ví: ${error}`));
     }
@@ -94,6 +102,6 @@ export class WalletOnboardingBloc {
   }
 
   dispose(): void {
-    this._listeners.clear();
+    this._listeners.splice(0, this._listeners.length);
   }
 }

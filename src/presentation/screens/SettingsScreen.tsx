@@ -8,8 +8,12 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { TabParamList } from '../navigation/types';
+import { ServiceLocator } from '../../core/di/service_locator';
+import { LogoutWalletUseCase } from '../../domain/usecases/wallet_usecases';
+import { CacheService } from '../../data/services/cache_service';
 
 type SettingsScreenNavigationProp = BottomTabNavigationProp<TabParamList, 'Settings'>;
 
@@ -18,6 +22,7 @@ interface Props {
 }
 
 export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const handleBackupWallet = () => {
     Alert.alert('Thông báo', 'Tính năng sao lưu ví sẽ được thêm trong phiên bản tiếp theo');
   };
@@ -28,6 +33,48 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSupport = () => {
     Alert.alert('Hỗ trợ', 'Liên hệ: support@finan.vn');
+  };
+
+  const handleLogoutWallet = () => {
+    Alert.alert(
+      'Đăng xuất ví',
+      'Bạn có chắc chắn muốn đăng xuất ví? Hãy đảm bảo bạn đã sao lưu cụm từ khôi phục trước khi tiếp tục.',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const logoutWalletUseCase = ServiceLocator.get<LogoutWalletUseCase>('LogoutWalletUseCase');
+              await logoutWalletUseCase.execute();
+              
+              // Clear cache when logging out
+              const cacheService = CacheService.getInstance();
+              cacheService.clearCache();
+              
+              Alert.alert('Thành công', 'Đã đăng xuất ví thành công', [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    // Navigate to welcome screen
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: 'Welcome' as any }],
+                    });
+                  },
+                },
+              ]);
+            } catch (error) {
+              Alert.alert('Lỗi', `Không thể đăng xuất ví: ${error}`);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderSettingItem = (title: string, subtitle: string, onPress: () => void, icon: string) => (
@@ -51,7 +98,11 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Cài đặt</Text>
         </View>
@@ -86,6 +137,26 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             handleSupport,
             '📧'
           )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quản lý ví</Text>
+          <TouchableOpacity
+            style={[styles.settingItem, styles.dangerItem]}
+            onPress={handleLogoutWallet}
+            activeOpacity={0.8}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.settingIcon, styles.dangerIcon]}>
+                <Text style={styles.settingIconText}>🚪</Text>
+              </View>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingTitle, styles.dangerText]}>Đăng xuất ví</Text>
+                <Text style={styles.settingSubtitle}>Xóa ví khỏi thiết bị này</Text>
+              </View>
+            </View>
+            <Text style={[styles.settingArrow, styles.dangerText]}>›</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -206,5 +277,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9ca3af',
     textAlign: 'center',
+  },
+  // Danger styles for logout wallet
+  dangerItem: {
+    borderBottomColor: '#fef2f2',
+  },
+  dangerIcon: {
+    backgroundColor: '#fef2f2',
+  },
+  dangerText: {
+    color: '#dc2626',
   },
 });

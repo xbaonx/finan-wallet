@@ -7,6 +7,8 @@ import { RootStackParamList } from './types';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { CreateWalletScreen } from '../screens/CreateWalletScreen';
 import { ImportWalletScreen } from '../screens/ImportWalletScreen';
+import { SendScreen } from '../screens/SendScreen';
+import { ReceiveScreen } from '../screens/ReceiveScreen';
 import { TabNavigator } from './TabNavigator';
 
 import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
@@ -105,6 +107,18 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen 
           name="MainTabs" 
           component={TabNavigator}
+          options={{ headerShown: false }}
+        />
+        
+        {/* Send/Receive screens */}
+        <Stack.Screen 
+          name="Send" 
+          component={SendScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="Receive" 
+          component={ReceiveScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

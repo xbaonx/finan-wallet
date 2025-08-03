@@ -23,11 +23,12 @@ export const TabNavigator: React.FC = () => {
           paddingBottom: 8,
           paddingTop: 8,
           height: 88,
+          marginBottom: 20,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
-          marginTop: 4,
+          marginTop: 1,
         },
       }}
     >
