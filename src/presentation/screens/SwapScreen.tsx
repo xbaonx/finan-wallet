@@ -14,6 +14,7 @@ import {
   Platform,
   Keyboard,
   Dimensions,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SwapBloc } from '../blocs/swap_bloc';
@@ -197,9 +198,15 @@ const SwapModal: React.FC<SwapModalProps> = ({
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
+      console.log('🎹 Keyboard Show - Height:', event.endCoordinates.height);
+      console.log('🎹 Screen Height:', screenHeight);
+      console.log('🎹 Insets Bottom:', insets.bottom);
+      console.log('🎹 Platform:', Platform.OS);
+      console.log('🎹 Calculated bottom position:', Platform.OS === 'ios' ? event.endCoordinates.height - insets.bottom : event.endCoordinates.height);
       setKeyboardHeight(event.endCoordinates.height);
     });
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      console.log('🎹 Keyboard Hide');
       setKeyboardHeight(0);
     });
 
@@ -256,7 +263,8 @@ const SwapModal: React.FC<SwapModalProps> = ({
       onRequestClose={onClose}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-        <View style={{ flex: 1, paddingBottom: keyboardHeight > 0 ? keyboardHeight - insets.bottom : 0 }}>
+        <View style={{ flex: 1 }}>
+
           {/* Header */}
           <View style={{
             flexDirection: 'row',
@@ -282,12 +290,16 @@ const SwapModal: React.FC<SwapModalProps> = ({
 
           {/* Scrollable Content */}
           <ScrollView 
-            style={{ flex: 1, marginBottom: -88 }}
+            style={{ 
+              flex: 1,
+              marginBottom: keyboardHeight > 0 ? (Platform.OS === 'ios' ? keyboardHeight - insets.bottom + 80 : 80) : 80
+            }}
             contentContainerStyle={{ 
               paddingHorizontal: 16, 
-              paddingBottom: 88 
+              paddingBottom: 20
             }}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             {/* Token Info */}
             {token && (
@@ -430,11 +442,21 @@ const SwapModal: React.FC<SwapModalProps> = ({
 
           {/* Fixed Confirm Button */}
           <View style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
             padding: 16,
-            paddingBottom: 32,
+            paddingBottom: Math.max(insets.bottom, 16),
             backgroundColor: 'white',
             borderTopWidth: 1,
             borderTopColor: '#f3f4f6',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 5,
+            transform: keyboardHeight > 0 ? [{ translateY: -keyboardHeight }] : []
           }}>
             <TouchableOpacity
               style={{

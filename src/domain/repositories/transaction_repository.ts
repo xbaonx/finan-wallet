@@ -1,6 +1,8 @@
-import { SendTransactionRequest, TransactionResult, TransactionHistory } from '../../data/services/transaction_service';
+import { SendTransactionRequest, TransactionResult } from '../../data/services/transaction_service';
+import { TransactionEntity, TransactionFilter, TransactionListResponse } from '../entities/transaction_entity';
 
 export interface TransactionRepository {
+  // Existing transaction operations
   sendTransaction(request: SendTransactionRequest): Promise<TransactionResult>;
   
   estimateGasFee(request: SendTransactionRequest): Promise<{
@@ -14,8 +16,17 @@ export interface TransactionRepository {
     confirmations: number;
   }>;
   
-  getTransactionHistory(address: string, limit?: number): Promise<TransactionHistory[]>;
+  // New transaction history operations
+  getTransactionHistory(
+    address: string, 
+    filter?: TransactionFilter,
+    cursor?: string,
+    limit?: number
+  ): Promise<TransactionListResponse>;
   
+  getTransactionDetail(hash: string): Promise<TransactionEntity | null>;
+  
+  // Utility methods
   isValidAddress(address: string): boolean;
   
   formatAddress(address: string): string;

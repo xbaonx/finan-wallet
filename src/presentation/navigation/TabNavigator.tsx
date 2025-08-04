@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabParamList } from './types';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { SwapScreen } from '../screens/SwapScreen';
-import { HistoryScreen } from '../screens/HistoryScreen';
+import { TransactionHistoryScreenWrapper } from '../screens/TransactionHistoryScreenWrapper';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -54,7 +54,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="History"
-        component={HistoryScreen}
+        component={TransactionHistoryScreenWrapper}
         options={{
           tabBarLabel: 'Lịch sử',
           tabBarIcon: ({ color, size }) => (

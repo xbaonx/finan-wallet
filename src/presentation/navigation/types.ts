@@ -8,6 +8,8 @@ export type RootStackParamList = {
   SetupPin: undefined;
   BiometricPrompt: undefined;
   Login: undefined;
+  Security: undefined;
+  ChangePin: undefined;
 };
 
 export type TabParamList = {

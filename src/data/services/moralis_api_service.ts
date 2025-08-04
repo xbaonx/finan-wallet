@@ -5,6 +5,8 @@ import {
   MoralisTokenBalanceResponse, 
   MoralisPriceResponse 
 } from '../types/moralis_types';
+import { priceCacheService } from './price_cache_service';
+import { transactionCacheService } from './transaction_cache_service';
 
 const MORALIS_API_KEY = API_CONFIG.MORALIS.API_KEY;
 const MORALIS_BASE_URL = API_CONFIG.MORALIS.BASE_URL;
@@ -174,53 +176,56 @@ export class MoralisApiService {
 
       // Add ERC-20 tokens with significant balances
       if (tokenBalancesData.result && Array.isArray(tokenBalancesData.result)) {
-        for (const token of tokenBalancesData.result) {
-          if (parseFloat(token.balance) > 0) {
-            const balance = parseFloat(token.balance) / Math.pow(10, token.decimals);
+        // Collect token addresses that need price fetching
+        const tokensToProcess: Array<{ token: any; balance: number; isCommonToken: boolean }> = [];
+        const uncachedAddresses: string[] = [];
 
+        for (const token of tokenBalancesData.result) {
+          if (token.balance && token.decimals) {
+            const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimals.toString()));
+            
             // Only include tokens with meaningful balance (> $1 equivalent or common tokens)
             const isCommonToken = COMMON_TOKENS.some(ct => 
               ct.address.toLowerCase() === token.token_address.toLowerCase()
             );
 
             if (balance > 0.001 || isCommonToken) {
-              // Try to get token price
-              let tokenPrice = 0;
-              try {
-                const priceResponse = await fetch(
-                  `${MORALIS_BASE_URL}/erc20/${token.token_address}/price?chain=eth`,
-                  {
-                    headers: {
-                      'X-API-Key': MORALIS_API_KEY,
-                      'Content-Type': 'application/json'
-                    }
-                  }
-                );
-
-                if (priceResponse.ok) {
-                  const priceData = await priceResponse.json() as MoralisPriceResponse;
-                  tokenPrice = priceData.usdPrice || 0;
-                }
-              } catch (error) {
-                console.warn(`Failed to fetch price for ${token.symbol}:`, error);
+              tokensToProcess.push({ token, balance, isCommonToken });
+              
+              // Check if price is cached
+              const cachedPrice = priceCacheService.getCachedPrice(token.token_address);
+              if (cachedPrice === null) {
+                uncachedAddresses.push(token.token_address);
               }
-
-              // Find logo from common tokens or use default
-              const commonToken = COMMON_TOKENS.find(ct => 
-                ct.address.toLowerCase() === token.token_address.toLowerCase()
-              );
-
-              tokens.push({
-                name: token.name || token.symbol,
-                symbol: token.symbol,
-                address: token.token_address,
-                logoUri: commonToken?.logoUri || token.logo || 'https://via.placeholder.com/32',
-                balance: balance.toFixed(6),
-                priceUSD: tokenPrice,
-                chainId: '0x1'
-              });
             }
           }
+        }
+        
+        // Batch fetch prices for uncached tokens
+        if (uncachedAddresses.length > 0) {
+          console.log(`Fetching prices for ${uncachedAddresses.length} uncached tokens`);
+          await this.batchFetchTokenPrices(uncachedAddresses);
+        }
+        
+        // Now process all tokens with cached prices
+        for (const { token, balance, isCommonToken } of tokensToProcess) {
+          // Get cached price (should be available now)
+          let tokenPrice = priceCacheService.getCachedPrice(token.token_address) || 0;
+
+          // Find logo from common tokens or use default
+          const commonToken = COMMON_TOKENS.find(ct => 
+            ct.address.toLowerCase() === token.token_address.toLowerCase()
+          );
+
+          tokens.push({
+            name: token.name || token.symbol,
+            symbol: token.symbol,
+            address: token.token_address,
+            logoUri: commonToken?.logoUri || token.logo || 'https://via.placeholder.com/32',
+            balance: balance.toFixed(6),
+            priceUSD: tokenPrice,
+            chainId: '0x1'
+          });
         }
       }
 
@@ -254,29 +259,92 @@ export class MoralisApiService {
   }
 
   /**
+   * Batch fetch token prices and cache them
+   */
+  private async batchFetchTokenPrices(addresses: string[]): Promise<void> {
+    const MAX_CONCURRENT = 3; // Limit concurrent requests to avoid rate limits
+    const batches = [];
+    
+    // Split addresses into smaller batches
+    for (let i = 0; i < addresses.length; i += MAX_CONCURRENT) {
+      batches.push(addresses.slice(i, i + MAX_CONCURRENT));
+    }
+    
+    // Process batches sequentially to avoid overwhelming the API
+    for (const batch of batches) {
+      const promises = batch.map(async (address) => {
+        try {
+          const response = await fetch(
+            `${MORALIS_BASE_URL}/erc20/${address}/price?chain=eth`,
+            {
+              headers: {
+                'X-API-Key': MORALIS_API_KEY,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            const priceData = await response.json() as MoralisPriceResponse;
+            const price = priceData.usdPrice || 0;
+            
+            // Cache the price
+            priceCacheService.setCachedPrice(address, price, priceData.tokenSymbol || 'UNKNOWN');
+            
+            console.log(`Cached price for ${address}: $${price}`);
+          } else {
+            console.warn(`Failed to fetch price for ${address}: ${response.status}`);
+            // Cache 0 price to avoid repeated failed requests
+            priceCacheService.setCachedPrice(address, 0, 'UNKNOWN');
+          }
+        } catch (error) {
+          console.warn(`Error fetching price for ${address}:`, error);
+          // Cache 0 price to avoid repeated failed requests
+          priceCacheService.setCachedPrice(address, 0, 'UNKNOWN');
+        }
+      });
+      
+      // Wait for current batch to complete before starting next batch
+      await Promise.all(promises);
+      
+      // Small delay between batches to be respectful to the API
+      if (batches.indexOf(batch) < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+  }
+
+  /**
    * Get token prices in USD
    */
   async getTokenPrices(tokenAddresses: string[]): Promise<{ [address: string]: number }> {
     try {
       const prices: { [address: string]: number } = {};
-
+      const uncachedAddresses: string[] = [];
+      
+      // Check cache first for all addresses
       for (const address of tokenAddresses) {
-        const priceResponse = await fetch(
-          `${MORALIS_BASE_URL}/erc20/${address}/price?chain=eth`,
-          {
-            headers: {
-              'X-API-Key': MORALIS_API_KEY,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        if (priceResponse.ok) {
-          const priceData: MoralisPriceResponse = await priceResponse.json();
-          prices[address] = priceData.usdPrice || 0;
+        const cachedPrice = priceCacheService.getCachedPrice(address);
+        if (cachedPrice !== null) {
+          prices[address] = cachedPrice;
+          console.log(`Using cached price for ${address}: $${cachedPrice}`);
         } else {
-          prices[address] = 0;
+          uncachedAddresses.push(address);
         }
+      }
+      
+      // Only fetch prices for uncached addresses
+      if (uncachedAddresses.length > 0) {
+        console.log(`Fetching prices for ${uncachedAddresses.length} uncached tokens (out of ${tokenAddresses.length} total)`);
+        await this.batchFetchTokenPrices(uncachedAddresses);
+        
+        // Get the newly cached prices
+        for (const address of uncachedAddresses) {
+          const price = priceCacheService.getCachedPrice(address) || 0;
+          prices[address] = price;
+        }
+      } else {
+        console.log(`All ${tokenAddresses.length} token prices found in cache!`);
       }
 
       return prices;
@@ -287,7 +355,7 @@ export class MoralisApiService {
   }
 
   /**
-   * Get current ETH price in USD
+   * Get ETH price in USD
    */
   async getETHPrice(): Promise<number> {
     try {
@@ -310,6 +378,154 @@ export class MoralisApiService {
     } catch (error) {
       console.error('Error fetching ETH price:', error);
       throw new Error('Không thể lấy giá ETH');
+    }
+  }
+
+  /**
+   * Get ERC20 token transfers for a wallet address
+   */
+  async getWalletTokenTransfers(walletAddress: string, cursor?: string, limit: number = 20): Promise<{
+    transfers: any[];
+    cursor: string | null;
+    total: number;
+  }> {
+    try {
+      // Check cache first
+      const cached = transactionCacheService.getCachedTransactionList(walletAddress, cursor);
+      if (cached) {
+        console.log(`Using cached token transfers for ${walletAddress} (cursor: ${cursor || 'first'})`);
+        return {
+          transfers: cached.data,
+          cursor: cached.cursor,
+          total: cached.data.length
+        };
+      }
+
+      console.log(`Fetching fresh token transfers for ${walletAddress} (cursor: ${cursor || 'first'})`);
+      
+      // Sử dụng đúng endpoint của Moralis API v2.2 cho token transfers
+      // Endpoint: GET /{address}/erc20/transfers
+      let url = `${this.baseUrl}/${walletAddress}/erc20/transfers?chain=eth&limit=${limit}`;
+      if (cursor) {
+        url += `&cursor=${cursor}`;
+      }
+      
+      console.log('Moralis API URL:', url);
+      console.log('API Key:', this.apiKey.substring(0, 20) + '...');
+
+      const response = await fetch(url, {
+        headers: {
+          'X-API-Key': this.apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch token transfers: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Moralis API Response:', JSON.stringify(data, null, 2));
+      
+      const result = {
+        transfers: data.result || [],
+        cursor: data.cursor || null,
+        total: data.total || 0
+      };
+      
+      // Cache the result
+      transactionCacheService.setCachedTransactionList(
+        walletAddress,
+        result.transfers,
+        result.cursor,
+        cursor
+      );
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching token transfers:', error);
+      throw new Error('Không thể lấy lịch sử chuyển token');
+    }
+  }
+
+  /**
+   * Get native transactions for a wallet address
+   */
+  async getWalletTransactions(walletAddress: string, cursor?: string, limit: number = 20): Promise<{
+    transactions: any[];
+    cursor: string | null;
+    total: number;
+  }> {
+    try {
+      let url = `${this.baseUrl}/${walletAddress}?chain=eth&limit=${limit}`;
+      if (cursor) {
+        url += `&cursor=${cursor}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'X-API-Key': this.apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch native transactions: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return {
+        transactions: data.result || [],
+        cursor: data.cursor || null,
+        total: data.total || 0
+      };
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      throw new Error('Không thể lấy lịch sử giao dịch');
+    }
+  }
+
+  async getTransactionByHash(hash: string): Promise<any | null> {
+    try {
+      // Check cache first
+      const cached = transactionCacheService.getCachedTransactionDetail(hash);
+      if (cached) {
+        console.log(`Using cached transaction detail for ${hash}`);
+        return cached;
+      }
+
+      console.log(`Fetching fresh transaction detail for ${hash}`);
+      
+      // Sử dụng Moralis API để lấy chi tiết transaction theo hash
+      const url = `${this.baseUrl}/transaction/${hash}?chain=eth`;
+      
+      console.log('Moralis Transaction Detail URL:', url);
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-API-Key': this.apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to fetch transaction detail:', response.status, response.statusText);
+        return null;
+      }
+      
+      const data = await response.json();
+      console.log('Moralis Transaction Detail Response:', JSON.stringify(data, null, 2));
+      
+      // Cache the result (transaction details rarely change)
+      transactionCacheService.setCachedTransactionDetail(hash, data);
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching transaction detail:', error);
+      return null;
     }
   }
 }

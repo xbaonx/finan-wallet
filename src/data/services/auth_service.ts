@@ -16,6 +16,7 @@ export class AuthService {
   private static readonly PIN_KEY = 'finan_pin';
   private static readonly BIOMETRIC_KEY = 'finan_biometric';
   private static readonly FAILED_ATTEMPTS_KEY = 'finan_failed_attempts';
+  private static readonly PIN_LENGTH_KEY = 'finan_pin_length';
   private static readonly MAX_FAILED_ATTEMPTS = 5;
 
   /**
@@ -114,19 +115,54 @@ export class AuthService {
   }
 
   /**
+   * Lưu độ dài PIN được chọn
+   */
+  async savePinLength(length: 4 | 6): Promise<boolean> {
+    try {
+      await SecureStore.setItemAsync(AuthService.PIN_LENGTH_KEY, length.toString());
+      return true;
+    } catch (error) {
+      console.error('Save PIN length error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Lấy độ dài PIN đã được thiết lập
+   */
+  async getPinLength(): Promise<4 | 6> {
+    try {
+      const length = await SecureStore.getItemAsync(AuthService.PIN_LENGTH_KEY);
+      return length === '4' ? 4 : 6; // Mặc định 6 nếu chưa thiết lập
+    } catch (error) {
+      console.error('Get PIN length error:', error);
+      return 6; // Mặc định 6
+    }
+  }
+
+  /**
    * Kiểm tra thông tin sinh trắc học của thiết bị
    */
   async getBiometricInfo(): Promise<BiometricInfo> {
     try {
+      console.log('Getting biometric info...');
       const isAvailable = await LocalAuthentication.hasHardwareAsync();
+      console.log('Hardware available:', isAvailable);
+      
       const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      console.log('Supported types:', supportedTypes);
+      
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      console.log('Is enrolled:', isEnrolled);
 
-      return {
+      const result = {
         isAvailable,
         supportedTypes,
         isEnrolled
       };
+      console.log('Final biometric info:', result);
+      
+      return result;
     } catch (error) {
       console.error('Get biometric info error:', error);
       return {

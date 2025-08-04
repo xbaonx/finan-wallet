@@ -4,6 +4,7 @@ import { SwapRepository } from '../../domain/repositories/swap_repository';
 import { OneInchApiService } from '../services/oneinch_api_service';
 import { CoinGeckoApiService } from '../services/coingecko_api_service';
 import { MoralisApiService } from '../services/moralis_api_service';
+import { tokenListCacheService } from '../services/token_list_cache_service';
 
 // ERC-20 ABI cho các function cần thiết
 const ERC20_ABI = [
@@ -86,6 +87,15 @@ export class SwapRepositoryImpl implements SwapRepository {
 
   async getSupportedTokens(): Promise<TokenInfo[]> {
     try {
+      // Check cache first
+      const cachedTokens = tokenListCacheService.getCachedTokenList();
+      if (cachedTokens) {
+        console.log(`Using cached supported tokens list (${cachedTokens.length} tokens)`);
+        return cachedTokens;
+      }
+
+      console.log('Fetching fresh supported tokens list...');
+      
       // Lấy danh sách token từ 1inch API
       const tokens = await this.oneInchService.getSupportedTokens();
       
@@ -168,6 +178,10 @@ export class SwapRepositoryImpl implements SwapRepository {
           console.log(`${index + 1}. ${token.symbol} - $${token.priceUSD.toFixed(2)}`);
         });
         
+        // Cache the result before returning
+        tokenListCacheService.setCachedTokenList(sortedByPrice);
+        console.log(`Cached ${sortedByPrice.length} tokens with real-time prices`);
+        
         return sortedByPrice;
         
       } catch (priceError) {
@@ -201,6 +215,10 @@ export class SwapRepositoryImpl implements SwapRepository {
         sortedFallbackTokens.slice(0, 5).forEach((token: any, index: any) => {
           console.log(`${index + 1}. ${token.symbol} - $${token.priceUSD.toFixed(2)}`);
         });
+        
+        // Cache the fallback result
+        tokenListCacheService.setCachedTokenList(sortedFallbackTokens);
+        console.log(`Cached ${sortedFallbackTokens.length} tokens with fallback prices`);
         
         return sortedFallbackTokens;
       }

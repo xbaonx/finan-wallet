@@ -8,6 +8,7 @@ import {
   Alert,
   Vibration,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
 import { AuthService } from '../../data/services/auth_service';
@@ -20,40 +21,75 @@ interface Props {
 }
 
 export const SetupPinScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<'first' | 'confirm'>('first');
   const [firstPin, setFirstPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [pinLength, setPinLength] = useState<4 | 6>(6); // Mặc định 6 số
 
   const authService = new AuthService();
   const setupPinUseCase = new SetupPinUseCase(authService);
 
   const currentPin = step === 'first' ? firstPin : confirmPin;
-  const setCurrentPin = step === 'first' ? setFirstPin : setConfirmPin;
 
   const handleNumberPress = (number: string) => {
-    if (currentPin.length < 6) {
-      setCurrentPin(currentPin + number);
+    if (step === 'first') {
+      if (firstPin.length < pinLength) {
+        const newPin = firstPin + number;
+        setFirstPin(newPin);
+        
+        // Auto-submit khi nhập đủ số PIN
+        if (newPin.length === pinLength) {
+          setTimeout(() => {
+            handleContinueWithPin(newPin);
+          }, 100);
+        }
+      }
+    } else {
+      if (confirmPin.length < pinLength) {
+        const newPin = confirmPin + number;
+        setConfirmPin(newPin);
+        
+        // Auto-submit khi nhập đủ số PIN
+        if (newPin.length === pinLength) {
+          setTimeout(() => {
+            handleContinueWithPin(newPin);
+          }, 100);
+        }
+      }
     }
   };
 
   const handleBackspace = () => {
-    setCurrentPin(currentPin.slice(0, -1));
+    if (step === 'first') {
+      setFirstPin(firstPin.slice(0, -1));
+    } else {
+      setConfirmPin(confirmPin.slice(0, -1));
+    }
   };
 
-  const handleContinue = async () => {
+  const handleContinueWithPin = async (pinValue: string) => {
+    console.log('handleContinueWithPin called with:', { pinValue, pinLength, step });
     if (step === 'first') {
-      if (currentPin.length < 4) {
-        Alert.alert('Lỗi', 'Mã PIN phải có ít nhất 4 chữ số');
+      if (pinValue.length !== pinLength) {
+        console.log('PIN length validation failed:', pinValue.length, 'vs', pinLength);
+        Alert.alert('Lỗi', `Mã PIN phải có đúng ${pinLength} chữ số`);
         return;
       }
+      console.log('Setting firstPin and moving to confirm step');
+      setFirstPin(pinValue);
+      setConfirmPin(''); // Reset confirm PIN
       setStep('confirm');
     } else {
       // Confirm step
+      console.log('Confirm step - executing with:', { firstPin, pinValue, pinLength });
       setIsLoading(true);
+      setConfirmPin(pinValue);
       
       try {
-        const result = await setupPinUseCase.execute(firstPin, confirmPin);
+        const result = await setupPinUseCase.execute(firstPin, pinValue, pinLength);
+        console.log('SetupPinUseCase result:', result);
         
         if (result.success) {
           // Chuyển đến màn hình hỏi bật sinh trắc học
@@ -76,10 +112,14 @@ export const SetupPinScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleContinue = async () => {
+    await handleContinueWithPin(currentPin);
+  };
+
   const renderPinDots = () => {
     return (
       <View style={styles.pinDotsContainer}>
-        {[...Array(6)].map((_, index) => (
+        {[...Array(pinLength)].map((_, index) => (
           <View
             key={index}
             style={[
@@ -127,7 +167,7 @@ export const SetupPinScreen: React.FC<Props> = ({ navigation }) => {
                   key={itemIndex}
                   style={styles.numberButton}
                   onPress={() => handleNumberPress(item)}
-                  disabled={currentPin.length >= 6}
+                  disabled={currentPin.length >= pinLength}
                 >
                   <Text style={styles.numberText}>{item}</Text>
                 </TouchableOpacity>
@@ -140,42 +180,42 @@ export const SetupPinScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 20, 40) }]}>
         <Text style={styles.title}>
           {step === 'first' ? 'Thiết lập mã PIN' : 'Xác nhận mã PIN'}
         </Text>
         <Text style={styles.subtitle}>
           {step === 'first' 
-            ? 'Tạo mã PIN từ 4-6 chữ số để bảo vệ ví của bạn'
+            ? 'Tạo mã PIN để bảo vệ ví của bạn'
             : 'Nhập lại mã PIN để xác nhận'
           }
         </Text>
+        
+        {step === 'first' && (
+          <TouchableOpacity
+            style={styles.pinLengthOption}
+            onPress={() => setPinLength(pinLength === 4 ? 6 : 4)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.checkbox}>
+              {pinLength === 4 && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.optionText}>Sử dụng PIN 4 số</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.content}>
         {renderPinDots()}
         {renderNumberPad()}
         
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            currentPin.length < 4 && styles.continueButtonDisabled,
-            isLoading && styles.continueButtonDisabled,
-          ]}
-          onPress={handleContinue}
-          disabled={currentPin.length < 4 || isLoading}
-        >
-          <Text style={styles.continueButtonText}>
-            {isLoading ? 'Đang xử lý...' : 
-             step === 'first' ? 'Tiếp tục' : 'Hoàn thành'}
-          </Text>
-        </TouchableOpacity>
+        {/* Đã ẩn nút xác nhận vì có auto-submit khi nhập đủ PIN */}
       </View>
 
       {step === 'confirm' && (
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { top: Math.max(insets.top + 60, 80) }]}
           onPress={() => {
             setStep('first');
             setConfirmPin('');
@@ -184,7 +224,7 @@ export const SetupPinScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.backButtonText}>← Quay lại</Text>
         </TouchableOpacity>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -287,5 +327,32 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     color: '#007AFF',
+  },
+  pinLengthOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    borderRadius: 4,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  checkmark: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
   },
 });

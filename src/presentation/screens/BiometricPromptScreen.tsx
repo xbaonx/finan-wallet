@@ -92,15 +92,32 @@ export const BiometricPromptScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   if (!biometricInfo.isAvailable) {
-    // Nếu thiết bị không hỗ trợ sinh trắc học, tự động chuyển đến MainTabs
-    setTimeout(() => {
-      navigation.replace('MainTabs');
-    }, 1000);
-
+    // Hiển thị thông báo thiết bị không hỗ trợ sinh trắc học
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          <Text style={styles.title}>Đang hoàn tất thiết lập...</Text>
+          <View style={styles.iconContainer}>
+            <Text style={styles.icon}>⚠️</Text>
+          </View>
+          
+          <Text style={styles.title}>Sinh trắc học không khả dụng</Text>
+          <Text style={styles.subtitle}>
+            Thiết bị này không hỗ trợ sinh trắc học hoặc chưa được thiết lập.
+            Bạn có thể bật tính năng này sau trong Cài đặt.
+          </Text>
+          
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={styles.primaryButton} 
+              onPress={() => navigation.replace('MainTabs')}
+            >
+              <Text style={styles.primaryButtonText}>Tiếp tục</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.note}>
+            💡 Để sử dụng sinh trắc học, hãy thiết lập vân tay hoặc Face ID trong Cài đặt thiết bị
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -257,5 +274,17 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  primaryButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });

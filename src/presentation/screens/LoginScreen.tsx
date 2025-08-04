@@ -8,6 +8,7 @@ import {
   Alert,
   Vibration,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
 import { AuthService } from '../../data/services/auth_service';
@@ -23,8 +24,10 @@ interface Props {
 }
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [pinLength, setPinLength] = useState<4 | 6>(6); // Mặc định 6 số
   const [biometricInfo, setBiometricInfo] = useState<{
     isEnabled: boolean;
     isAvailable: boolean;
@@ -36,12 +39,29 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const getBiometricInfoUseCase = new GetBiometricInfoUseCase(authService);
 
   useEffect(() => {
-    checkBiometricInfo();
-    // Tự động thử xác thực bằng sinh trắc học nếu được bật
-    setTimeout(() => {
-      tryBiometricAuth();
-    }, 500);
+    initializeAuth();
   }, []);
+
+  const initializeAuth = async () => {
+    try {
+      console.log('Initializing auth...');
+      // Lấy thông tin PIN length đã được thiết lập
+      const savedPinLength = await authService.getPinLength();
+      console.log('Saved PIN length:', savedPinLength);
+      setPinLength(savedPinLength);
+      
+      console.log('Checking biometric info...');
+      await checkBiometricInfo();
+      console.log('Biometric info checked, scheduling auto biometric auth...');
+      // Tự động thử xác thực bằng sinh trắc học nếu được bật
+      setTimeout(() => {
+        console.log('Auto biometric auth timeout triggered');
+        tryBiometricAuth();
+      }, 500);
+    } catch (error) {
+      console.error('Initialize auth error:', error);
+    }
+  };
 
   const checkBiometricInfo = async () => {
     try {
@@ -57,22 +77,47 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const tryBiometricAuth = async () => {
-    if (biometricInfo.isEnabled && biometricInfo.isAvailable) {
-      try {
+    console.log('tryBiometricAuth called with biometricInfo:', biometricInfo);
+    
+    // Kiểm tra lại biometric info trực tiếp từ service
+    try {
+      const freshBiometricInfo = await getBiometricInfoUseCase.execute();
+      console.log('Fresh biometric info:', freshBiometricInfo);
+      
+      // Chỉ cần hardware available và enrolled là đủ, không cần check isEnabled
+      if (freshBiometricInfo.isAvailable && freshBiometricInfo.isEnrolled) {
+        console.log('Starting biometric authentication...');
         const result = await authenticateUseCase.executeWithBiometric();
+        console.log('Biometric auth result:', result);
         if (result.success) {
+          console.log('Biometric auth successful, navigating to MainTabs');
           navigation.replace('MainTabs');
+        } else {
+          console.log('Biometric auth failed, fallback to PIN');
         }
-        // Nếu thất bại, không làm gì, để user nhập PIN
-      } catch (error) {
-        console.error('Auto biometric auth error:', error);
+      } else {
+        console.log('Biometric not available or not enrolled:', {
+          isAvailable: freshBiometricInfo.isAvailable,
+          isEnrolled: freshBiometricInfo.isEnrolled,
+          isEnabled: freshBiometricInfo.isEnabled
+        });
       }
+    } catch (error) {
+      console.error('Auto biometric auth error:', error);
     }
   };
 
   const handleNumberPress = (number: string) => {
-    if (pin.length < 6) {
-      setPin(pin + number);
+    if (pin.length < pinLength) {
+      const newPin = pin + number;
+      setPin(newPin);
+      
+      // Auto-submit khi nhập đủ số PIN
+      if (newPin.length === pinLength) {
+        setTimeout(() => {
+          submitPinWithValue(newPin);
+        }, 100); // Delay nhỏ để UI cập nhật
+      }
     }
   };
 
@@ -80,16 +125,16 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setPin(pin.slice(0, -1));
   };
 
-  const handlePinSubmit = async () => {
-    if (pin.length < 4) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ mã PIN');
+  const submitPinWithValue = async (pinValue: string) => {
+    if (pinValue.length < pinLength) {
+      Alert.alert('Lỗi', `Vui lòng nhập đầy đủ ${pinLength} số PIN`);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const result = await authenticateUseCase.executeWithPin(pin);
+      const result = await authenticateUseCase.executeWithPin(pinValue);
       
       if (result.success) {
         navigation.replace('MainTabs');
@@ -111,6 +156,10 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePinSubmit = async () => {
+    await submitPinWithValue(pin);
   };
 
   const handleBiometricAuth = async () => {
@@ -135,7 +184,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const renderPinDots = () => {
     return (
       <View style={styles.pinDotsContainer}>
-        {[...Array(6)].map((_, index) => (
+        {[...Array(pinLength)].map((_, index) => (
           <View
             key={index}
             style={[
@@ -183,7 +232,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                   key={itemIndex}
                   style={styles.numberButton}
                   onPress={() => handleNumberPress(item)}
-                  disabled={pin.length >= 6 || isLoading}
+                  disabled={pin.length >= pinLength || isLoading}
                 >
                   <Text style={styles.numberText}>{item}</Text>
                 </TouchableOpacity>
@@ -205,8 +254,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top + 20, 40) }]}>
         <Text style={styles.title}>Mở khóa Finan</Text>
         <Text style={styles.subtitle}>
           Nhập mã PIN để truy cập ví của bạn
@@ -217,18 +266,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         {renderPinDots()}
         {renderNumberPad()}
         
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (pin.length < 4 || isLoading) && styles.submitButtonDisabled,
-          ]}
-          onPress={handlePinSubmit}
-          disabled={pin.length < 4 || isLoading}
-        >
-          <Text style={styles.submitButtonText}>
-            {isLoading ? 'Đang xác thực...' : 'Mở khóa'}
-          </Text>
-        </TouchableOpacity>
+        {/* Đã ẩn nút mở khóa vì có auto-submit khi nhập đủ PIN */}
 
         {biometricInfo.isEnabled && biometricInfo.isAvailable && (
           <View style={styles.biometricSection}>
@@ -257,7 +295,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           Finan Wallet - Bảo mật với mã PIN và sinh trắc học
         </Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

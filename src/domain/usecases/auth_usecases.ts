@@ -3,7 +3,7 @@ import { AuthService, AuthResult, BiometricInfo } from '../../data/services/auth
 export class SetupPinUseCase {
   constructor(private authService: AuthService) {}
 
-  async execute(pin: string, confirmPin: string): Promise<AuthResult> {
+  async execute(pin: string, confirmPin: string, pinLength?: 4 | 6): Promise<AuthResult> {
     // Validate PIN format
     const validation = this.authService.validatePinFormat(pin);
     if (!validation.valid) {
@@ -15,8 +15,17 @@ export class SetupPinUseCase {
       return { success: false, error: 'Mã PIN không khớp, vui lòng thử lại' };
     }
 
-    // Save PIN
+    // Validate PIN length if specified
+    if (pinLength && pin.length !== pinLength) {
+      return { success: false, error: `Mã PIN phải có đúng ${pinLength} chữ số` };
+    }
+
+    // Save PIN and PIN length preference
     const saved = await this.authService.savePin(pin);
+    if (saved && pinLength) {
+      await this.authService.savePinLength(pinLength);
+    }
+    
     if (saved) {
       return { success: true };
     } else {
@@ -131,6 +140,46 @@ export class CheckAuthStatusUseCase {
       isBiometricEnabled,
       needsAuthentication: hasPinSet // Nếu có PIN thì cần authentication
     };
+  }
+}
+
+export class ChangePinUseCase {
+  constructor(private authService: AuthService) {}
+
+  async execute(currentPin: string, newPin: string, confirmNewPin: string, newPinLength?: 4 | 6): Promise<AuthResult> {
+    // Verify current PIN first
+    const currentPinResult = await this.authService.verifyPin(currentPin);
+    if (!currentPinResult.success) {
+      return { success: false, error: 'Mã PIN hiện tại không đúng' };
+    }
+
+    // Validate new PIN format
+    const validation = this.authService.validatePinFormat(newPin);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    // Check if new PINs match
+    if (newPin !== confirmNewPin) {
+      return { success: false, error: 'Mã PIN mới không khớp, vui lòng thử lại' };
+    }
+
+    // Validate new PIN length if specified
+    if (newPinLength && newPin.length !== newPinLength) {
+      return { success: false, error: `Mã PIN mới phải có đúng ${newPinLength} chữ số` };
+    }
+
+    // Save new PIN and PIN length preference
+    const saved = await this.authService.savePin(newPin);
+    if (saved && newPinLength) {
+      await this.authService.savePinLength(newPinLength);
+    }
+    
+    if (saved) {
+      return { success: true };
+    } else {
+      return { success: false, error: 'Không thể lưu mã PIN mới, vui lòng thử lại' };
+    }
   }
 }
 

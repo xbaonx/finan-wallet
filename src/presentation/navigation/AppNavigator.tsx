@@ -12,6 +12,8 @@ import { ReceiveScreen } from '../screens/ReceiveScreen';
 import { SetupPinScreen } from '../screens/SetupPinScreen';
 import { BiometricPromptScreen } from '../screens/BiometricPromptScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { SecurityScreen } from '../screens/SecurityScreen';
+import { ChangePinScreen } from '../screens/ChangePinScreen';
 import { TabNavigator } from './TabNavigator';
 
 import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
@@ -154,6 +156,18 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen 
           name="Receive" 
           component={ReceiveScreen}
+          options={{ headerShown: false }}
+        />
+        
+        {/* Settings screens */}
+        <Stack.Screen 
+          name="Security" 
+          component={SecurityScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="ChangePin" 
+          component={ChangePinScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

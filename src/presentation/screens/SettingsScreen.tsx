@@ -10,12 +10,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { TabParamList } from '../navigation/types';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { TabParamList, RootStackParamList } from '../navigation/types';
 import { ServiceLocator } from '../../core/di/service_locator';
 import { LogoutWalletUseCase } from '../../domain/usecases/wallet_usecases';
 import { CacheService } from '../../data/services/cache_service';
 
-type SettingsScreenNavigationProp = BottomTabNavigationProp<TabParamList, 'Settings'>;
+type SettingsScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Settings'>,
+  StackNavigationProp<RootStackParamList>
+>;
 
 interface Props {
   navigation: SettingsScreenNavigationProp;
@@ -28,7 +33,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSecurity = () => {
-    Alert.alert('Thông báo', 'Tính năng bảo mật sẽ được thêm trong phiên bản tiếp theo');
+    navigation.navigate('Security');
   };
 
   const handleSupport = () => {
@@ -103,7 +108,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
           <Text style={styles.title}>Cài đặt</Text>
         </View>
 

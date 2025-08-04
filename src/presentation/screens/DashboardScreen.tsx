@@ -11,6 +11,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import { SafeAreaView as RNSafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -19,7 +20,7 @@ import { DashboardBloc } from '../blocs/dashboard_bloc';
 import { LoadDashboardEvent, RefreshDashboardEvent } from '../blocs/dashboard_event';
 import { DashboardState, DashboardLoading, DashboardLoaded, DashboardRefreshing, DashboardError } from '../blocs/dashboard_state';
 import { ServiceLocator } from '../../core/di/service_locator';
-import { testMoralisAPI } from '../../data/services/moralis_test';
+
 import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
 import { TokenEntity } from '../../domain/entities/token_entity';
 
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [wallet, setWallet] = useState<any>(null);
@@ -91,10 +93,6 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Lỗi', 'Dashboard chưa được khởi tạo. Vui lòng thử lại.');
       return;
     }
-    // Test Moralis API first
-    const testAddress = '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d3b6'; // Vitalik's address for testing
-    console.log('Testing Moralis API...');
-    await testMoralisAPI(testAddress);
     
     await dashboardBloc.add(new RefreshDashboardEvent());
   };
@@ -188,7 +186,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         }
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
           <Text style={styles.greeting}>Xin chào!</Text>
           <Text style={styles.walletAddress}>
             {wallet ? truncateAddress(wallet.address) : 'Đang tải...'}
@@ -309,7 +307,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 20,
     paddingBottom: 16,
   },
   greeting: {
