@@ -23,7 +23,7 @@ export class SwapRepositoryImpl implements SwapRepository {
     private oneInchService: OneInchApiService,
     private coinGeckoService: CoinGeckoApiService,
     private moralisApiService: MoralisApiService,
-    private rpcUrl: string = 'https://cloudflare-eth.com' // Free Cloudflare RPC
+    private rpcUrl: string = 'https://bsc-dataseed.binance.org/' // BSC RPC
   ) {
     // Lazy initialization of RPC provider
   }
@@ -97,47 +97,86 @@ export class SwapRepositoryImpl implements SwapRepository {
       console.log('Fetching fresh supported tokens list...');
       
       // Lấy danh sách token từ 1inch API
-      const tokens = await this.oneInchService.getSupportedTokens();
+      console.log('🚀 Starting token fetch from 1inch API...');
+      let tokens = await this.oneInchService.getSupportedTokens();
+      console.log(`📊 1inch API returned ${tokens ? tokens.length : 0} tokens`);
+      
+      // Nếu 1inch API không trả về tokens cho BSC, tạo fallback list
+      if (!tokens || tokens.length === 0) {
+        console.log('🔄 1inch API returned no tokens, using fallback BSC token list');
+        tokens = [
+          { address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', symbol: 'WBNB', name: 'Wrapped BNB', decimals: 18 },
+          { address: '0x55d398326f99059fF775485246999027B3197955', symbol: 'USDT', name: 'Tether USD', decimals: 18 },
+          { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', symbol: 'USDC', name: 'USD Coin', decimals: 18 },
+          { address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', symbol: 'BUSD', name: 'Binance USD', decimals: 18 },
+          { address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', symbol: 'BTCB', name: 'Bitcoin BEP2', decimals: 18 },
+          { address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', symbol: 'ETH', name: 'Ethereum Token', decimals: 18 },
+          { address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', symbol: 'CAKE', name: 'PancakeSwap Token', decimals: 18 },
+          { address: '0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE', symbol: 'XRP', name: 'XRP Token', decimals: 6 },
+          { address: '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47', symbol: 'ADA', name: 'Cardano Token', decimals: 6 },
+          { address: '0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD', symbol: 'LINK', name: 'Chainlink Token', decimals: 18 },
+          { address: '0x4338665CBB7B2485A8855A139b75D5e34AB0DB94', symbol: 'LTC', name: 'Litecoin Token', decimals: 18 },
+          { address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', symbol: 'DAI', name: 'Dai Stablecoin', decimals: 18 },
+          { address: '0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402', symbol: 'DOT', name: 'Polkadot Token', decimals: 10 },
+          { address: '0x1Ce0c2827e2eF14D5C4f29a091d735A204794041', symbol: 'AVAX', name: 'Avalanche Token', decimals: 18 },
+          { address: '0x570A5D26f7765Ecb712C0924E4De545B89fD43dF', symbol: 'SOL', name: 'Solana Token', decimals: 18 },
+          { address: '0xbA2aE424d960c26247Dd6c32edC70B295c744C43', symbol: 'DOGE', name: 'Dogecoin Token', decimals: 8 },
+        ];
+      }
       
       // Hardcode danh sách coin theo yêu cầu của user
-      // Bao gồm các DeFi tokens phổ biến và top coins trên Ethereum
+      // Bao gồm các DeFi tokens phổ biến và top coins trên BSC
       const topExpensiveAddresses = [
-        '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', // ETH - Ethereum
-        '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', // UNI - Uniswap
-        '0x514910771af9ca656af840dff83e8264ecf986ca', // LINK - Chainlink
-        '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9', // AAVE - Aave
-        '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', // WBTC - Wrapped Bitcoin
-        '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0', // MATIC - Polygon
-        '0x6b3595068778dd592e39a122f4f5a5cf09c90fe2', // SUSHI - SushiSwap
-        '0xc00e94cb662c3520282e6f5717214004a7f26888', // COMP - Compound
-        '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2', // MKR - Maker
-        '0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e', // YFI - Yearn Finance
-        '0xd533a949740bb3306d119cc777fa900ba034cd52', // CRV - Curve DAO Token
-        '0x0d8775f648430679a709e98d2b0cb6250d2887ef', // BAT - Basic Attention Token
-        '0x408e41876cccdc0f92210600ef50372656052a38', // REN - Ren
-        '0x111111111117dc0aa78b770fa6a738034120c302', // 1INCH - 1inch
-        '0xc011a73ee8576fb46f5e1c5751ca3b9fe0af2a6f', // SNX - Synthetix
-        '0xaaaea5004d83f05c9f4a9efd8b14d1e2d1b8b8b8', // CEL - Celsius (placeholder)
-        '0xba100000625a3754423978a60c9317c58a424e3d', // BAL - Balancer
-        '0xdd974d5c2e2928dea5f71b9825b8b646686bd200', // KNC - Kyber Network
-        '0xd26114cd6ee289accf82350c8d8487fedb8a0c07', // OMG - OMG Network
-        '0x476c5e26a75bd202a9683ffd34359c0cc15be0ff', // SRM - Serum
-        '0xbbbbca6a901c926f240b89eacb641d8aec7aeafd', // LRC - Loopring
-        '0xf629cbd94d3791c9250152bd8dfbdf380e2a3b9c', // ENJ - Enjin Coin
-        '0x0f5d2fb29fb7d3cfee444a200298f468908cc942', // MANA - Decentraland
-        '0xc944e90c64b2c07662a292be6244bdf05cda44a7', // GRT - The Graph
-        '0x3506424f91fd33084466f402d5d97f05f8e3b4af', // CHZ - Chiliz
-        '0x85f17cf997934a597031b2e18a9ab6ebd4b9f6a4', // NEAR - NEAR (ERC-20 version)
-        '0xbb0e17ef65f82ab018d8edd776e8dd940327b28b', // AXS - Axie Infinity
-        '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', // WETH - Wrapped Ethereum
+        '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB - Wrapped BNB
+        '0x55d398326f99059fF775485246999027B3197955', // USDT - Tether USD
+        '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC - USD Coin
+        '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD - Binance USD
+        '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', // BTCB - Bitcoin BEP2
+        '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', // ETH - Ethereum Token
+        '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', // CAKE - PancakeSwap Token
+        '0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE', // XRP - XRP Token
+        '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47', // ADA - Cardano Token
+        '0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD', // LINK - Chainlink Token
+        '0x4338665CBB7B2485A8855A139b75D5e34AB0DB94', // LTC - Litecoin Token
+        '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', // DAI - Dai Stablecoin
+        '0x8fF795a6F4D97E7887C79beA79aba5cc76444aDf', // BCH - Bitcoin Cash Token
+        '0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402', // DOT - Polkadot Token
+        '0x111111111117dC0aa78b770fA6A738034120C302', // 1INCH - 1inch
+        '0x0D8Ce2A99Bb6e3B7Db580eD848240e4a0F9aE153', // FIL - Filecoin Token
+        '0x85EAC5Ac2F758618dFa09bDbe0cf174e7d574D5B', // TRX - TRON Token
+        '0x1Ce0c2827e2eF14D5C4f29a091d735A204794041', // AVAX - Avalanche Token
+        '0x16939ef78684453bfDFb47825F8a5F714f12623a', // XTZ - Tezos Token
+        '0x56b6fB708fC5732DEC1Afc8D8556423A2EDcCbD6', // EOS - EOS Token
+        '0x570A5D26f7765Ecb712C0924E4De545B89fD43dF', // SOL - Solana Token
+        '0x52CE071Bd9b1C4B00A0b92D298c512478CaD67e8', // COMP - Compound Token
+        '0x88f1A5ae2A3BF98AEAF342D26B30a79438c9142e', // YFI - Yearn.finance
+        '0x9Ac983826058b8a9C7Aa1C9171441191232E8404', // SNX - Synthetix Network
+        '0x250632378E573c6Be1AC2f97Fcdf00515d0Aa91B', // BETH - Binance Beacon ETH
+        '0xbA2aE424d960c26247Dd6c32edC70B295c744C43', // DOGE - Dogecoin Token
       ];
       
-      // Lọc những token có trong danh sách top expensive
-      const topExpensiveTokens = tokens.filter(token => 
-        topExpensiveAddresses.includes(token.address.toLowerCase())
-      );
+      // Lọc các token phổ biến từ 1inch API BSC
+      const popularSymbols = ['WBNB', 'USDT', 'USDC', 'BUSD', 'BTCB', 'ETH', 'CAKE', 'XRP', 'ADA', 'LINK', 'LTC', 'DAI', 'DOT', 'AVAX', 'SOL', 'DOGE', 'BNB', 'MATIC', 'UNI', 'AAVE'];
       
-      console.log(`Found ${topExpensiveTokens.length} top expensive tokens from hardcoded list`);
+      let topExpensiveTokens;
+      if (tokens.length <= 16) { // Fallback tokens có 16 items
+        console.log('Using all fallback BSC tokens');
+        topExpensiveTokens = tokens;
+      } else {
+        // Lọc những token phổ biến từ 1inch API BSC
+        topExpensiveTokens = tokens.filter(token => 
+          popularSymbols.includes(token.symbol?.toUpperCase())
+        );
+        console.log(`Found ${topExpensiveTokens.length} popular tokens from 1inch API`);
+        
+        // Nếu không tìm thấy token nào, lấy 20 token đầu tiên
+        if (topExpensiveTokens.length === 0) {
+          console.log('No popular tokens found, using first 20 tokens from 1inch API');
+          topExpensiveTokens = tokens.slice(0, 20);
+        }
+      }
+      
+      console.log(`Found ${topExpensiveTokens.length} top expensive tokens from list`);
       
       // Lấy địa chỉ các token để fetch giá từ Moralis
       const tokenAddresses = topExpensiveTokens.map(token => {
@@ -190,7 +229,7 @@ export class SwapRepositoryImpl implements SwapRepository {
         // Fallback to static prices if Moralis API fails
         const fallbackPrices: Record<string, { price: number; change: number }> = {
           '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee': { price: 3400, change: 2.5 }, // ETH
-          '0xdac17f958d2ee523a2206206994597c13d831ec7': { price: 1.0, change: 0.1 }, // USDT
+          '0x55d398326f99059fF775485246999027B3197955': { price: 1.0, change: 0.1 }, // USDT BSC
           '0xa0b86a33e6ba8d2f7928d16768debd89c78b322f': { price: 1.0, change: -0.05 }, // USDC
           '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': { price: 3400, change: 2.5 }, // WETH
           '0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce': { price: 0.000025, change: -1.8 }, // SHIB
@@ -444,7 +483,7 @@ export class SwapRepositoryImpl implements SwapRepository {
           
         } catch (error) {
           lastError = error;
-          console.warn(`Allowance check attempt ${attempt} failed:`, error.message);
+          console.warn(`Allowance check attempt ${attempt} failed:`, (error as Error).message);
           
           if (attempt < maxRetries) {
             // Đợi 2 giây trước khi retry

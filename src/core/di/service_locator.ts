@@ -87,7 +87,7 @@ export class ServiceLocator {
     container.register('CryptoService', () => new CryptoService());
     container.register('SecureStorageService', () => new SecureStorageService());
     container.register('MoralisApiService', () => new MoralisApiService());
-    container.register('OneInchApiService', () => new OneInchApiService('lfkI2Bca3G4qdGpiFx62yuoDS2hXetVu'));
+    container.register('OneInchApiService', () => new OneInchApiService()); // API key sẽ được lấy từ api_config
     container.register('CoinGeckoApiService', () => new CoinGeckoApiService());
 
     // Repositories
@@ -197,7 +197,8 @@ export class ServiceLocator {
       container.get('CheckTokenAllowanceUseCase'),
       container.get('ApproveTokenUseCase'),
       container.get('PerformSwapUseCase'),
-      container.get('GetCurrentWalletUseCase')
+      container.get('GetCurrentWalletUseCase'),
+      container.get('GetWalletCredentialsUseCase')
     ), false); // Not singleton for BLoCs
   }
 

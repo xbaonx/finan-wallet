@@ -1,14 +1,24 @@
 import { TokenInfo, SwapQuote, SwapRequest, SwapTransaction } from '../../domain/entities/swap_entity';
 import { ethers } from 'ethers';
+import { API_CONFIG } from '../../core/config/api_config';
 
 export class OneInchApiService {
-  private readonly baseUrl = 'https://api.1inch.dev';
+  private readonly baseUrl: string;
   private readonly apiKey: string;
-  private readonly chainId = 1; // Ethereum mainnet
+  private readonly chainId: number;
   private readonly maxRetries = 3;
+  private readonly useFusion: boolean;
+  private readonly endpoints: any;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  constructor(apiKey?: string) {
+    // Sử dụng apiKey từ tham số hoặc lấy từ config nếu không có
+    this.apiKey = apiKey || API_CONFIG.ONEINCH.API_KEY;
+    this.baseUrl = API_CONFIG.ONEINCH.BASE_URL;
+    this.chainId = API_CONFIG.ONEINCH.CHAIN_ID;
+    this.useFusion = API_CONFIG.ONEINCH.USE_FUSION;
+    this.endpoints = API_CONFIG.ONEINCH.ENDPOINTS;
+    
+    console.log(`🔄 OneInchApiService initialized with chainId: ${this.chainId}, useFusion: ${this.useFusion}`);
   }
 
   private convertToWei(amount: string, decimals: number): string {
@@ -116,18 +126,32 @@ export class OneInchApiService {
 
   async getSupportedTokens(): Promise<TokenInfo[]> {
     try {
-      const response = await this.makeRequest(`/swap/v6.0/${this.chainId}/tokens`);
+      console.log('🔍 Calling 1inch API for BSC tokens...');
+      // Sử dụng endpoint từ config
+      const endpoint = this.endpoints.TOKENS.replace('{chainId}', this.chainId.toString());
+      const response = await this.makeRequest(endpoint);
       
-      return Object.values(response.tokens).map((token: any) => ({
+      console.log('📦 1inch API Response:', JSON.stringify(response, null, 2));
+      
+      if (!response || !response.tokens) {
+        console.log('❌ 1inch API returned no tokens for BSC, will use fallback');
+        return [];
+      }
+      
+      const tokens = Object.values(response.tokens).map((token: any) => ({
         address: token.address,
         symbol: token.symbol,
         name: token.name,
         decimals: token.decimals,
         logoURI: token.logoURI,
       }));
+      
+      console.log(`✅ 1inch API returned ${tokens.length} tokens for BSC`);
+      return tokens;
     } catch (error) {
-      console.error('Error fetching supported tokens:', error);
-      throw new Error('Không thể lấy danh sách token hỗ trợ');
+      console.error('❌ Error fetching supported tokens from 1inch API:', error);
+      console.log('🔄 Will use fallback BSC token list instead');
+      return []; // Return empty array to trigger fallback
     }
   }
 
@@ -145,11 +169,12 @@ export class OneInchApiService {
         includeGas: 'true',
       };
 
-      // Use the correct 1inch API v6 endpoint
-      const response = await this.makeRequest(`/swap/v6.0/${this.chainId}/quote`, params);
+      // Sử dụng endpoint từ config
+      const endpoint = this.endpoints.QUOTE.replace('{chainId}', this.chainId.toString());
+      const response = await this.makeRequest(endpoint, params);
 
       // Debug quote response
-      console.log('🎯 1inch Quote API Response:');
+      console.log('🏁 1inch Quote API Response:');
       console.log('dstAmount:', response.dstAmount);
       
       // 1inch API v6.0 uses 'dstAmount' field
@@ -177,31 +202,112 @@ export class OneInchApiService {
     }
   }
 
-  async buildSwapTransaction(request: SwapRequest): Promise<SwapTransaction> {
+  async checkAllowance(tokenAddress: string, ownerAddress: string): Promise<string> {
     try {
-      const fromAmountWei = this.convertToWei(request.fromAmount, request.fromToken.decimals);
+      console.log('🔍 Checking allowance for token:', tokenAddress);
       
       const params = {
-        src: request.fromToken.address,
-        dst: request.toToken.address,
-        amount: fromAmountWei,
-        from: request.fromAddress,
-        slippage: request.slippage || 1,
-        disableEstimate: request.disableEstimate || false,
+        tokenAddress,
+        walletAddress: ownerAddress
       };
+      
+      // Sử dụng endpoint APPROVE từ config và thêm /allowance
+      const baseEndpoint = this.endpoints.APPROVE.replace('{chainId}', this.chainId.toString());
+      const url = baseEndpoint.replace('/transaction', '/allowance');
+      
+      const response = await this.makeRequest(url, params);
+      console.log('✅ Allowance check result:', response.allowance);
+      
+      return response.allowance || '0';
+    } catch (error) {
+      console.error('❌ Error checking allowance:', error);
+      return '0';
+    }
+  }
 
-      const response = await this.makeRequest(`/swap/v6.0/${this.chainId}/swap`, params);
-
+  async buildApproveTransaction(tokenAddress: string, amount?: string): Promise<SwapTransaction> {
+    try {
+      console.log('🔐 Building approve transaction for token:', tokenAddress);
+      
+      const params: any = {
+        tokenAddress
+      };
+      
+      // If amount is specified, use it; otherwise approve infinite
+      if (amount) {
+        params.amount = amount;
+      }
+      
+      // Sử dụng endpoint từ config
+      const endpoint = this.endpoints.APPROVE.replace('{chainId}', this.chainId.toString());
+      const response = await this.makeRequest(endpoint, params);
+      console.log('✅ Approve transaction built successfully');
+      
       return {
-        to: response.tx.to,
-        data: response.tx.data,
-        value: response.tx.value || '0',
-        gas: response.tx.gas || response.tx.gasLimit || '150000',
-        gasPrice: response.tx.gasPrice || '20000000000',
+        to: response.to,
+        data: response.data,
+        value: response.value || '0',
+        gas: response.gas,
+        gasPrice: response.gasPrice
+      };
+    } catch (error) {
+      console.error('❌ Error building approve transaction:', error);
+      throw error;
+    }
+  }
+
+  async buildSwapTransaction(swapRequest: SwapRequest): Promise<SwapTransaction> {
+    const { fromToken, toToken, fromAmount, fromAddress, slippage } = swapRequest;
+    
+    console.log('🔄 Building swap transaction with params:', {
+      fromToken: fromToken.symbol,
+      toToken: toToken.symbol,
+      fromAmount,
+      fromAddress,
+      slippage
+    });
+
+    const amountWei = this.convertToWei(fromAmount, fromToken.decimals);
+    console.log(`💰 Amount in wei: ${amountWei}`);
+
+    const params = {
+      src: fromToken.address,
+      dst: toToken.address,
+      amount: amountWei,
+      from: fromAddress,
+      slippage: slippage.toString(),
+      disableEstimate: 'false'
+    };
+
+    // Kiểm tra xem có sử dụng Fusion hay không
+    let endpoint;
+    if (this.useFusion) {
+      endpoint = this.endpoints.FUSION.replace('{chainId}', this.chainId.toString());
+      console.log('🔥 Using 1inch Fusion API for gasless swap!');
+    } else {
+      endpoint = this.endpoints.SWAP.replace('{chainId}', this.chainId.toString());
+      console.log('💧 Using standard 1inch Swap API');
+    }
+    
+    console.log('🌐 Using endpoint:', `${this.baseUrl}${endpoint}`);
+
+    try {
+      const response = await this.makeRequest(endpoint, params);
+      console.log('✅ Swap transaction built successfully');
+      
+      // Cấu trúc response có thể khác nhau giữa Fusion và Standard API
+      const txData = this.useFusion ? response.tx : response.tx;
+      
+      return {
+        to: txData.to,
+        data: txData.data,
+        value: txData.value,
+        gas: txData.gas,
+        gasPrice: txData.gasPrice
       };
     } catch (error) {
       console.error('Error building swap transaction:', error);
-      throw new Error('Không thể tạo giao dịch swap');
+      throw error;
     }
   }
 
@@ -215,28 +321,5 @@ export class OneInchApiService {
     }
   }
 
-  async buildApproveTransaction(
-    tokenAddress: string,
-    amount: string
-  ): Promise<SwapTransaction> {
-    try {
-      const params = {
-        tokenAddress,
-        amount,
-      };
 
-      const response = await this.makeRequest(`/swap/v6.0/${this.chainId}/approve/transaction`, params);
-
-      return {
-        to: response.to,
-        data: response.data,
-        value: response.value || '0',
-        gas: response.gasLimit,
-        gasPrice: response.gasPrice,
-      };
-    } catch (error) {
-      console.error('Error building approve transaction:', error);
-      throw new Error('Không thể tạo giao dịch approve');
-    }
-  }
 }

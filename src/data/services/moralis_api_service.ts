@@ -25,7 +25,7 @@ export class MoralisApiService {
       console.log(`Base URL: ${this.baseUrl}`);
       
       const nativeBalanceResponse = await fetch(
-        `${this.baseUrl}/${walletAddress}/balance?chain=eth`,
+        `${this.baseUrl}/${walletAddress}/balance?chain=bsc`,
         {
           headers: {
             'X-API-Key': this.apiKey,
@@ -48,7 +48,7 @@ export class MoralisApiService {
 
       // Get ETH price (using WETH as proxy)
       const ethPriceResponse = await fetch(
-        `${this.baseUrl}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=eth`,
+        `${this.baseUrl}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`,
         {
           headers: {
             'X-API-Key': this.apiKey,
@@ -92,7 +92,7 @@ export class MoralisApiService {
       console.log(`API Key: ${MORALIS_API_KEY.substring(0, 20)}...`);
       console.log(`Base URL: ${MORALIS_BASE_URL}`);
       
-      const url = `${MORALIS_BASE_URL}/${address}/balance?chain=eth`;
+      const url = `${MORALIS_BASE_URL}/${address}/balance?chain=bsc`;
       console.log(`Full URL: ${url}`);
 
       // Get native ETH balance
@@ -120,7 +120,7 @@ export class MoralisApiService {
 
       // Get ERC-20 token balances
       const tokenBalancesResponse = await fetch(
-        `${MORALIS_BASE_URL}/${address}/erc20?chain=eth`,
+        `${MORALIS_BASE_URL}/${address}/erc20?chain=bsc`,
         {
           headers: {
             'X-API-Key': MORALIS_API_KEY,
@@ -139,7 +139,7 @@ export class MoralisApiService {
 
       // Get ETH price (using WETH as proxy)
       const ethPriceResponse = await fetch(
-        `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=eth`,
+        `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`,
         {
           headers: {
             'X-API-Key': MORALIS_API_KEY,
@@ -163,33 +163,38 @@ export class MoralisApiService {
         const ethBalance = (parseFloat(nativeBalanceData.balance) / Math.pow(10, 18));
         if (ethBalance > 0.001) { // Only show if balance > 0.001 ETH
           tokens.push({
-            name: 'Ethereum',
-            symbol: 'ETH',
+            name: 'BNB',
+            symbol: 'BNB',
             address: '0x0000000000000000000000000000000000000000',
-            logoUri: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+            logoUri: 'https://cryptologos.cc/logos/bnb-bnb-logo.png',
             balance: ethBalance.toFixed(6),
             priceUSD: ethPrice,
-            chainId: '0x1'
+            chainId: 56,
+            decimals: 18,
+            isNative: true
           });
         }
       }
 
       // Add ERC-20 tokens with significant balances
-      if (tokenBalancesData.result && Array.isArray(tokenBalancesData.result)) {
+      // Moralis API returns tokens directly as array, not in result property
+      const tokensArray = Array.isArray(tokenBalancesData) ? tokenBalancesData : (tokenBalancesData.result || []);
+      
+      if (tokensArray && Array.isArray(tokensArray) && tokensArray.length > 0) {
         // Collect token addresses that need price fetching
         const tokensToProcess: Array<{ token: any; balance: number; isCommonToken: boolean }> = [];
         const uncachedAddresses: string[] = [];
 
-        for (const token of tokenBalancesData.result) {
+        for (const token of tokensArray) {
           if (token.balance && token.decimals) {
             const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimals.toString()));
             
-            // Only include tokens with meaningful balance (> $1 equivalent or common tokens)
+            // Only include tokens with meaningful balance (> $0.01 equivalent or common tokens)
             const isCommonToken = COMMON_TOKENS.some(ct => 
               ct.address.toLowerCase() === token.token_address.toLowerCase()
             );
 
-            if (balance > 0.001 || isCommonToken) {
+            if (balance > 0.01 || isCommonToken) {
               tokensToProcess.push({ token, balance, isCommonToken });
               
               // Check if price is cached
@@ -211,6 +216,15 @@ export class MoralisApiService {
         for (const { token, balance, isCommonToken } of tokensToProcess) {
           // Get cached price (should be available now)
           let tokenPrice = priceCacheService.getCachedPrice(token.token_address) || 0;
+          
+          // Add fallback prices for common stablecoins
+          if (tokenPrice === 0) {
+            if (token.symbol === 'USDT' || token.symbol === 'USDC' || token.symbol === 'BUSD') {
+              tokenPrice = 1.0; // Stablecoins = $1
+            } else if (token.symbol === 'BNB' || token.symbol === 'WBNB') {
+              tokenPrice = 600; // BNB fallback price
+            }
+          }
 
           // Find logo from common tokens or use default
           const commonToken = COMMON_TOKENS.find(ct => 
@@ -224,10 +238,14 @@ export class MoralisApiService {
             logoUri: commonToken?.logoUri || token.logo || 'https://via.placeholder.com/32',
             balance: balance.toFixed(6),
             priceUSD: tokenPrice,
-            chainId: '0x1'
+            chainId: 56,
+            decimals: parseInt(token.decimals) || 18
           });
         }
       }
+      
+      console.log(`🏁 FINAL TOKENS ARRAY LENGTH: ${tokens.length}`);
+      console.log('FINAL TOKENS:', JSON.stringify(tokens, null, 2));
 
       // Calculate total balance
       const totalBalance = tokens.reduce((sum, token) => {
@@ -275,7 +293,7 @@ export class MoralisApiService {
       const promises = batch.map(async (address) => {
         try {
           const response = await fetch(
-            `${MORALIS_BASE_URL}/erc20/${address}/price?chain=eth`,
+            `${MORALIS_BASE_URL}/erc20/${address}/price?chain=bsc`,
             {
               headers: {
                 'X-API-Key': MORALIS_API_KEY,
@@ -360,7 +378,7 @@ export class MoralisApiService {
   async getETHPrice(): Promise<number> {
     try {
       const ethPriceResponse = await fetch(
-        `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=eth`,
+        `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`,
         {
           headers: {
             'X-API-Key': MORALIS_API_KEY,
@@ -405,7 +423,7 @@ export class MoralisApiService {
       
       // Sử dụng đúng endpoint của Moralis API v2.2 cho token transfers
       // Endpoint: GET /{address}/erc20/transfers
-      let url = `${this.baseUrl}/${walletAddress}/erc20/transfers?chain=eth&limit=${limit}`;
+      let url = `${this.baseUrl}/${walletAddress}/erc20/transfers?chain=bsc&limit=${limit}`;
       if (cursor) {
         url += `&cursor=${cursor}`;
       }
@@ -458,7 +476,7 @@ export class MoralisApiService {
     total: number;
   }> {
     try {
-      let url = `${this.baseUrl}/${walletAddress}?chain=eth&limit=${limit}`;
+      let url = `${this.baseUrl}/${walletAddress}?chain=bsc&limit=${limit}`;
       if (cursor) {
         url += `&cursor=${cursor}`;
       }
@@ -499,7 +517,7 @@ export class MoralisApiService {
       console.log(`Fetching fresh transaction detail for ${hash}`);
       
       // Sử dụng Moralis API để lấy chi tiết transaction theo hash
-      const url = `${this.baseUrl}/transaction/${hash}?chain=eth`;
+      const url = `${this.baseUrl}/transaction/${hash}?chain=bsc`;
       
       console.log('Moralis Transaction Detail URL:', url);
       

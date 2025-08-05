@@ -11,6 +11,7 @@ import {
   PerformSwapUseCase 
 } from '../../domain/usecases/swap_usecases';
 import { GetCurrentWalletUseCase } from '../../domain/usecases/dashboard_usecases';
+import { GetWalletCredentialsUseCase } from '../../domain/usecases/wallet_usecases';
 
 export class SwapBloc {
   private state: SwapState = new SwapInitialState();
@@ -28,7 +29,7 @@ export class SwapBloc {
 
   // USDT token info (default for swaps)
   private readonly USDT_TOKEN: TokenInfo = {
-    address: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+    address: '0x55d398326f99059fF775485246999027B3197955',
     symbol: 'USDT',
     name: 'Tether USD',
     decimals: 6,
@@ -43,7 +44,8 @@ export class SwapBloc {
     private checkTokenAllowanceUseCase: CheckTokenAllowanceUseCase,
     private approveTokenUseCase: ApproveTokenUseCase,
     private performSwapUseCase: PerformSwapUseCase,
-    private getCurrentWalletUseCase: GetCurrentWalletUseCase
+    private getCurrentWalletUseCase: GetCurrentWalletUseCase,
+    private getWalletCredentialsUseCase: GetWalletCredentialsUseCase
   ) {}
 
   addListener(listener: (state: SwapState) => void): void {
@@ -278,8 +280,8 @@ export class SwapBloc {
       let allowanceAmount = '0';
       
       if (event.request.fromToken.address.toLowerCase() !== '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee') {
-        // Get 1inch spender address (this would need to be implemented)
-        const spenderAddress = '0x1111111254eeb25477b68fb85ed929f73a960582'; // 1inch v5 router
+        // Get 1inch spender address for BSC
+        const spenderAddress = '0x111111125421ca6dc452d289314280a0f8842a65'; // 1inch BSC router
         allowanceAmount = await this.checkTokenAllowanceUseCase.execute(
           event.request.fromToken.address,
           event.request.fromAddress,
@@ -322,19 +324,44 @@ export class SwapBloc {
   }
 
   private async handleApproveToken(event: ApproveTokenEvent): Promise<void> {
-    const token = this.fromToken;
-    if (!token) return;
+    console.log('🚀 handleApproveToken called with:', {
+      tokenAddress: event.tokenAddress,
+      spenderAddress: event.spenderAddress,
+      amount: event.amount,
+      ownerAddress: event.ownerAddress
+    });
+    
+    // Get token info from supportedTokens using event.tokenAddress
+    const token = this.supportedTokens.find(t => t.address.toLowerCase() === event.tokenAddress.toLowerCase());
+    if (!token) {
+      console.log('❌ No token found for address:', event.tokenAddress);
+      return;
+    }
 
+    console.log('✅ Found token for approve:', token.symbol);
+    console.log('✅ Emitting ApprovingTokenState for:', token.symbol);
     this.emit(new ApprovingTokenState(token.symbol, event.amount));
 
     try {
+      console.log('📱 Getting current wallet...');
       const wallet = await this.getCurrentWalletUseCase.execute();
-      if (!wallet) throw new Error('Không tìm thấy ví');
+      if (!wallet) {
+        console.log('❌ No wallet found');
+        throw new Error('Không tìm thấy ví');
+      }
+      console.log('✅ Wallet found:', wallet.address);
 
       // Get wallet credentials to sign transaction
-      // This would need to be implemented to get private key securely
-      const privateKey = 'WALLET_PRIVATE_KEY'; // This should be retrieved securely
+      console.log('🔐 Getting wallet credentials for approve transaction...');
+      const credentials = await this.getWalletCredentialsUseCase.execute(wallet.id);
+      if (!credentials || !credentials.privateKey) {
+        throw new Error('Không thể lấy private key từ ví');
+      }
+      
+      const privateKey = credentials.privateKey;
+      console.log('✅ Successfully retrieved private key for wallet:', wallet.address);
 
+      console.log('📝 Executing real approve transaction...');
       const result = await this.approveTokenUseCase.execute(
         event.tokenAddress,
         event.spenderAddress,
@@ -342,8 +369,65 @@ export class SwapBloc {
         event.ownerAddress,
         privateKey
       );
+      
+      console.log('✅ Real approve transaction success:', result.transactionHash);
 
+      // Emit approve success first
       this.emit(new TokenApprovedState(result.transactionHash, token.symbol));
+      
+      // Wait a bit for transaction to be processed
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check allowance again and update state
+      const spenderAddress = '0x111111125421ca6dc452d289314280a0f8842a65'; // 1inch BSC router
+      const newAllowanceAmount = await this.checkTokenAllowanceUseCase.execute(
+        event.tokenAddress,
+        event.ownerAddress,
+        spenderAddress
+      );
+      
+      // Check if we still need approval
+      const needsApproval = parseFloat(newAllowanceAmount) < parseFloat(this.fromAmount);
+      
+      // Get current quote if available
+      if (this.fromToken && this.toToken && this.fromAmount) {
+        try {
+          const quote = await this.getSwapQuoteUseCase.execute({
+            fromToken: this.fromToken,
+            toToken: this.toToken,
+            fromAmount: this.fromAmount,
+            fromAddress: event.ownerAddress,
+            slippage: 1
+          });
+          
+          // Emit updated quote state with new allowance info
+          this.emit(new QuoteLoadedState(
+            this.swapType,
+            this.fromToken,
+            this.toToken,
+            this.fromAmount,
+            quote.toAmount,
+            quote,
+            this.supportedTokens,
+            this.filteredTokens,
+            needsApproval,
+            newAllowanceAmount
+          ));
+        } catch (error) {
+          console.error('Error refreshing quote after approve:', error);
+          // If quote fails, still update with allowance info
+          this.emit(new SwapConfiguredState(
+            this.swapType,
+            this.fromToken,
+            this.toToken,
+            this.fromAmount,
+            this.toAmount,
+            this.supportedTokens,
+            this.filteredTokens,
+            this.searchQuery
+          ));
+        }
+      }
     } catch (error) {
       this.emit(new SwapFailedState(
         error instanceof Error ? error.message : 'Không thể approve token',
@@ -367,8 +451,15 @@ export class SwapBloc {
       if (!wallet) throw new Error('Không tìm thấy ví');
 
       // Get wallet credentials to sign transaction
-      // This would need to be implemented to get private key securely
-      const privateKey = 'WALLET_PRIVATE_KEY'; // This should be retrieved securely
+      // Get wallet credentials to sign transaction
+      console.log('🔐 Getting wallet credentials for swap transaction...');
+      const credentials = await this.getWalletCredentialsUseCase.execute(wallet.id);
+      if (!credentials || !credentials.privateKey) {
+        throw new Error('Không thể lấy private key từ ví');
+      }
+      
+      const privateKey = credentials.privateKey;
+      console.log('✅ Successfully retrieved private key for wallet:', wallet.address);
 
       const result = await this.performSwapUseCase.execute(event.request, privateKey);
 

@@ -27,7 +27,7 @@ const QR_SIZE = width * 0.6;
 
 export const ReceiveScreen: React.FC<Props> = ({ navigation }) => {
   const [addressInfo, setAddressInfo] = useState<ReceiveAddressInfo | null>(null);
-  const [selectedToken, setSelectedToken] = useState<'ETH' | 'USDT'>('ETH');
+  const [selectedToken, setSelectedToken] = useState<'BNB' | 'USDT'>('BNB');
   const [isLoading, setIsLoading] = useState(true);
 
   const receiveUseCases = new ReceiveUseCases();
@@ -79,17 +79,18 @@ export const ReceiveScreen: React.FC<Props> = ({ navigation }) => {
       return 'ethereum:0x0000000000000000000000000000000000000000'; // Fallback address
     }
     
-    // Tạo QR code khác nhau cho ETH và USDT
-    if (selectedToken === 'ETH') {
-      return addressInfo.address; // Simple address for ETH
+    // Tạo QR code khác nhau cho BNB và USDT
+    if (selectedToken === 'BNB') {
+      // BNB address
+      return `binancecoin:${addressInfo.address}`;
     } else {
-      // USDT contract address trên Ethereum mainnet
-      const usdtAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
-      return `ethereum:${usdtAddress}@1?address=${addressInfo.address}`;
+      // USDT contract address trên BSC mainnet
+      const usdtAddress = '0x55d398326f99059fF775485246999027B3197955';
+      return `binancecoin:${usdtAddress}@56?address=${addressInfo.address}`;
     }
   };
 
-  const handleTokenSelect = (token: 'ETH' | 'USDT') => {
+  const handleTokenSelect = (token: 'BNB' | 'USDT') => {
     setSelectedToken(token);
   };
 
@@ -126,17 +127,17 @@ export const ReceiveScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             style={[
               styles.tokenButton,
-              selectedToken === 'ETH' && styles.tokenButtonActive,
+              selectedToken === 'BNB' && styles.tokenButtonActive,
             ]}
-            onPress={() => handleTokenSelect('ETH')}
+            onPress={() => handleTokenSelect('BNB')}
           >
             <Text
               style={[
                 styles.tokenButtonText,
-                selectedToken === 'ETH' && styles.tokenButtonTextActive,
+                selectedToken === 'BNB' && styles.tokenButtonTextActive,
               ]}
             >
-              ETH
+              BNB
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
