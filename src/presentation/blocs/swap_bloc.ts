@@ -179,8 +179,13 @@ export class SwapBloc {
       this.supportedTokens = tokens;
       this.filteredTokens = tokens;
 
-      // Tải số dư của các token để hiển thị trong tab bán
-      await this.loadTokenBalances();
+      // Chỉ tải số dư khi ở tab bán hoặc cần thiết để hiển thị
+      if (this.swapType === SwapType.SELL) {
+        console.log('🔄 Tab Bán coin: Đang tải số dư token...');
+        await this.loadTokenBalances();
+      } else {
+        console.log('ℹ️ Tab Mua coin: Bỏ qua việc tải số dư token');
+      }
 
       this.emit(new TokensLoadedState(this.supportedTokens, this.filteredTokens, this.searchQuery));
     } catch (error) {
@@ -198,12 +203,12 @@ export class SwapBloc {
 
       console.log('🔍 Tải số dư token cho ví:', wallet.address);
       
-      // Sử dụng GlobalTokenService để lấy số dư token từ cache hoặc API
-      console.log('💾 Đang lấy số dư token từ GlobalTokenService...');
-      const walletBalance = await this.globalTokenService.getWalletBalance(false);
+      // Sử dụng GlobalTokenService để lấy số dư token từ cache hoặc chờ dữ liệu
+      console.log('⏳ Đang chờ/lấy số dư token từ GlobalTokenService...');
+      const walletBalance = await this.globalTokenService.getWalletBalanceOrWait();
       
       if (!walletBalance) {
-        console.error('❌ Không thể lấy số dư token từ GlobalTokenService');
+        console.log('ℹ️ Không có dữ liệu token trong GlobalTokenService, SwapBloc sẽ bỏ qua balance');
         return;
       }
       

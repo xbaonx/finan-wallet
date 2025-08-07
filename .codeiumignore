@@ -1,0 +1,11 @@
+# Ignore test and debug files from production builds
+src/data/services/moralis_test.ts
+src/data/services/moralis_transaction_debug.ts
+src/presentation/screens/MoralisDebugScreen.tsx
+
+# Ignore other development-only files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/

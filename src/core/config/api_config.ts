@@ -51,34 +51,34 @@ export const COMMON_TOKENS = [
     symbol: 'DAI',
     name: 'Dai Stablecoin',
     decimals: 18,
-    logoUri: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png'
+    logoUri: 'https://tokens.1inch.io/0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3.png' // DAI BSC
   },
   {
     address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC BSC
     symbol: 'USDC',
     name: 'USD Coin',
     decimals: 18,
-    logoUri: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png'
+    logoUri: 'https://tokens.1inch.io/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d.png' // USDC BSC
   },
   {
     address: '0x55d398326f99059fF775485246999027B3197955', // USDT BSC
     symbol: 'USDT', 
     name: 'Tether USD',
     decimals: 18,
-    logoUri: 'https://cryptologos.cc/logos/tether-usdt-logo.png'
+    logoUri: 'https://tokens.1inch.io/0x55d398326f99059ff775485246999027b3197955.png' // USDT BSC
   },
   {
     address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
     symbol: 'WBNB',
     name: 'Wrapped BNB',
     decimals: 18,
-    logoUri: 'https://cryptologos.cc/logos/bnb-bnb-logo.png'
+    logoUri: 'https://tokens.1inch.io/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png' // BNB BSC
   },
   {
     address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
     symbol: 'BUSD',
     name: 'Binance USD',
     decimals: 18,
-    logoUri: 'https://cryptologos.cc/logos/binance-usd-busd-logo.png'
+    logoUri: 'https://tokens.1inch.io/0xe9e7cea3dedca5984780bafc599bd69add087d56.png' // BUSD BSC
   }
 ];

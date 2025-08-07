@@ -34,10 +34,11 @@ export class TokenRepositoryImpl implements TokenRepository {
           name: 'Ethereum',
           symbol: 'ETH',
           address: '0x0000000000000000000000000000000000000000',
-          logoUri: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+          logoUri: 'https://tokens.1inch.io/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png', // ETH logo từ 1inch
           balance: '0',
           priceUSD: 0,
-          chainId: '0x1'
+          chainId: 1,
+          decimals: 18 // ETH có 18 decimals
         };
       }
     } catch (error) {
@@ -47,10 +48,11 @@ export class TokenRepositoryImpl implements TokenRepository {
         name: 'Ethereum',
         symbol: 'ETH',
         address: '0x0000000000000000000000000000000000000000',
-        logoUri: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+        logoUri: 'https://tokens.1inch.io/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png', // ETH logo từ 1inch
         balance: '0',
         priceUSD: 0,
-        chainId: '0x1'
+        chainId: 1,
+        decimals: 18 // ETH có 18 decimals
       };
     }
   }

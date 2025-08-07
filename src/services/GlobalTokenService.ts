@@ -64,7 +64,8 @@ export class GlobalTokenService {
         !forceRefresh && 
         (now - this.lastFetchTime < this.cacheValidityMs)
       ) {
-        console.log('📦 GlobalTokenService: Lấy dữ liệu token từ cache');
+        console.log('📦 GlobalTokenService: Lấy dữ liệu token từ cache (Age: ' + Math.round((now - this.lastFetchTime)/1000) + ' giây)');
+        console.log('🔄 GlobalTokenService: Thời điểm lấy dữ liệu gần nhất: ' + new Date(this.lastFetchTime).toLocaleTimeString());
         return this.walletBalance;
       }
       
@@ -138,10 +139,70 @@ export class GlobalTokenService {
   }
   
   /**
+   * Lấy dữ liệu số dư token từ cache hoặc đợi nếu đang có request khác
+   * Hàm này không gây ra API call nếu không cần thiết và sẽ đợi dữ liệu từ request khác
+   * @param timeout Thời gian tối đa để đợi (ms)
+   * @returns WalletBalance hoặc null nếu quá hạn
+   */
+  public async getWalletBalanceOrWait(timeout = 5000): Promise<WalletBalance | null> {
+    try {
+      // Lấy địa chỉ ví hiện tại
+      const wallet = await this.walletRepository.getWallet();
+      if (!wallet) return null;
+      
+      const now = Date.now();
+      const walletAddress = wallet.address;
+      
+      // Nếu địa chỉ ví thay đổi, cần làm mới dữ liệu
+      if (this.lastWalletAddress !== walletAddress) {
+        this.lastWalletAddress = walletAddress;
+        return this.getWalletBalance(true);
+      }
+      
+      // Nếu đã có dữ liệu trong cache và còn hạn, trả về ngay
+      if (this.walletBalance && (now - this.lastFetchTime < this.cacheValidityMs)) {
+        console.log('📦 GlobalTokenService: Lấy dữ liệu token từ cache (Age: ' + Math.round((now - this.lastFetchTime)/1000) + ' giây)');
+        return this.walletBalance;
+      }
+      
+      // Nếu đang fetch, đợi hoàn thành
+      if (this.isFetching) {
+        console.log('⏳ GlobalTokenService: getWalletBalanceOrWait đang chờ dữ liệu được fetch bởi request khác...');
+        return new Promise((resolve) => {
+          let timeoutId: NodeJS.Timeout;
+          
+          // Tạo listener tạm thời
+          const tempListener = () => {
+            clearTimeout(timeoutId);
+            this.removeListener(tempListener);
+            resolve(this.walletBalance);
+          };
+          
+          this.addListener(tempListener);
+          
+          // Timeout safety
+          timeoutId = setTimeout(() => {
+            this.removeListener(tempListener);
+            console.log('⌛ GlobalTokenService: Hết thời gian chờ, trả về dữ liệu hiện có');
+            resolve(this.walletBalance); // Trả về dữ liệu hiện có, kể cả null
+          }, timeout);
+        });
+      }
+      
+      // Nếu không có dữ liệu và không ai đang fetch, bắt đầu fetch mới
+      console.log('🔄 GlobalTokenService: Không có dữ liệu trong cache và không có request đang chờ, bắt đầu fetch mới');
+      return this.getWalletBalance(false);
+    } catch (error) {
+      console.error('❌ GlobalTokenService: Lỗi trong getWalletBalanceOrWait', error);
+      return this.walletBalance; // Trả về dữ liệu hiện có, kể cả null
+    }
+  }
+  
+  /**
    * Làm mới cache (sau giao dịch hoặc khi cần)
    */
   public async refreshCache(): Promise<void> {
-    return this.getWalletBalance(true);
+    await this.getWalletBalance(true);
   }
   
   /**

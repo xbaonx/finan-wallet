@@ -8,6 +8,8 @@ import {
 import { priceCacheService } from './price_cache_service';
 import { logoCacheService } from './logo_cache_service';
 import { transactionCacheService } from './transaction_cache_service';
+import { requestLogger } from '../utils/request_logger';
+import { POPULAR_TOKENS, findTokenByAddress, getTokenLogoUri } from '../../core/config/token_list';
 
 const MORALIS_API_KEY = API_CONFIG.MORALIS.API_KEY;
 const MORALIS_BASE_URL = API_CONFIG.MORALIS.BASE_URL;
@@ -17,16 +19,33 @@ export class MoralisApiService {
   private readonly baseUrl = MORALIS_BASE_URL;
 
   /**
+   * Reset session tracking để theo dõi API calls mới
+   */
+  public resetSessionTracking(): void {
+    requestLogger.resetSession();
+    console.warn('🎯 [MORALIS] Session tracking reset - Ready to monitor new requests');
+  }
+
+  /**
+   * In summary của session hiện tại
+   */
+  public printSessionSummary(): void {
+    requestLogger.printSummary();
+  }
+
+  /**
    * Get ETH balance for a wallet address
    */
   async getETHBalance(walletAddress: string): Promise<{ balance: string; priceUSD: number }> {
     try {
       console.log(`Fetching ETH balance for: ${walletAddress}`);
-      console.log(`API Key: ${this.apiKey.substring(0, 20)}...`);
-      console.log(`Base URL: ${this.baseUrl}`);
+      
+      // Log request trước khi gọi API
+      const url = `${this.baseUrl}/${walletAddress}/balance?chain=bsc`;
+      requestLogger.logRequest(url, 'getETHBalance');
       
       const nativeBalanceResponse = await fetch(
-        `${this.baseUrl}/${walletAddress}/balance?chain=bsc`,
+        url,
         {
           headers: {
             'X-API-Key': this.apiKey,
@@ -48,8 +67,11 @@ export class MoralisApiService {
       console.log('Native balance data:', nativeBalanceData);
 
       // Get ETH price (using WETH as proxy)
+      const ethPriceUrl = `${this.baseUrl}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`;
+      requestLogger.logRequest(ethPriceUrl, 'getETHBalance_price');
+      
       const ethPriceResponse = await fetch(
-        `${this.baseUrl}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`,
+        ethPriceUrl,
         {
           headers: {
             'X-API-Key': this.apiKey,
@@ -97,6 +119,7 @@ export class MoralisApiService {
       console.log(`Full URL: ${url}`);
 
       // Get native ETH balance
+      requestLogger.logRequest(url, 'getWalletBalance_native');
       const nativeBalanceResponse = await fetch(url, {
         headers: {
           'X-API-Key': MORALIS_API_KEY,
@@ -120,8 +143,11 @@ export class MoralisApiService {
       console.log('Native balance data:', nativeBalanceData);
 
       // Get ERC-20 token balances
+      const tokenBalancesUrl = `${MORALIS_BASE_URL}/${address}/erc20?chain=bsc`;
+      requestLogger.logRequest(tokenBalancesUrl, 'getWalletBalance_tokens');
+      
       const tokenBalancesResponse = await fetch(
-        `${MORALIS_BASE_URL}/${address}/erc20?chain=bsc`,
+        tokenBalancesUrl,
         {
           headers: {
             'X-API-Key': MORALIS_API_KEY,
@@ -139,8 +165,11 @@ export class MoralisApiService {
       console.log('Token balances data:', tokenBalancesData);
 
       // Get ETH price (using WETH as proxy)
+      const ethPriceUrl = `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`;
+      requestLogger.logRequest(ethPriceUrl, 'getWalletBalance_ethPrice');
+      
       const ethPriceResponse = await fetch(
-        `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`,
+        ethPriceUrl,
         {
           headers: {
             'X-API-Key': MORALIS_API_KEY,
@@ -163,11 +192,15 @@ export class MoralisApiService {
       if (nativeBalanceData.balance && parseFloat(nativeBalanceData.balance) > 0) {
         const ethBalance = (parseFloat(nativeBalanceData.balance) / Math.pow(10, 18));
         if (ethBalance > 0.001) { // Only show if balance > 0.001 ETH
+          // Sử dụng URL logo từ danh sách token tĩnh cho BNB
+          const bnbLogoUrl = getTokenLogoUri('0x0000000000000000000000000000000000000000');
+          console.log(`Native BNB logo URL: ${bnbLogoUrl}`);
+          
           tokens.push({
             name: 'BNB',
             symbol: 'BNB',
             address: '0x0000000000000000000000000000000000000000',
-            logoUri: 'https://cryptologos.cc/logos/bnb-bnb-logo.png',
+            logoUri: bnbLogoUrl || 'https://tokens.1inch.io/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png', // Fallback nếu không tìm thấy
             balance: ethBalance.toFixed(6),
             priceUSD: ethPrice,
             chainId: 56,
@@ -228,22 +261,15 @@ export class MoralisApiService {
             }
           }
 
-          // Chỉ sử dụng logo từ Moralis API và cache
-          
-          // Lấy logo từ cache hoặc cache logo mới
-          let logoUrl = logoCacheService.getCachedLogo(token.token_address);
-          
-          if (!logoUrl && token.logo) {
-            // Lưu logo mới vào cache
-            logoCacheService.setCachedLogo(token.token_address, token.logo, token.symbol);
-            logoUrl = token.logo;
-          }
+          // Sử dụng danh sách token phổ biến để lấy logo
+          const tokenLogoUrl = getTokenLogoUri(token.token_address);
+          console.log(`Logo for ${token.symbol} (${token.token_address}): ${tokenLogoUrl}`);
           
           tokens.push({
             name: token.name || token.symbol,
             symbol: token.symbol,
             address: token.token_address,
-            logoUri: logoUrl || 'https://via.placeholder.com/32',
+            logoUri: tokenLogoUrl,
             balance: balance.toFixed(6),
             priceUSD: tokenPrice,
             chainId: 56,
@@ -287,21 +313,48 @@ export class MoralisApiService {
   /**
    * Batch fetch token prices and cache them
    */
-  private async batchFetchTokenPrices(addresses: string[]): Promise<void> {
-    const MAX_CONCURRENT = 3; // Limit concurrent requests to avoid rate limits
+  async batchFetchTokenPrices(addresses: string[]): Promise<void> {
+    if (addresses.length === 0) return;
+    
+    // Lọc addresses để chỉ bao gồm các token trong danh sách POPULAR_TOKENS
+    // Loại bỏ BNB native token (zero address) vì không thể fetch price
+    const popularTokenAddresses = POPULAR_TOKENS
+      .map(token => token.address)
+      .filter(address => address !== '0x0000000000000000000000000000000000000000');
+    
+    const filteredAddresses = addresses.filter(address => 
+      popularTokenAddresses.some((popularAddress: string) => 
+        popularAddress.toLowerCase() === address.toLowerCase()
+      )
+    );
+    
+    if (filteredAddresses.length === 0) {
+      console.log('Không có token phổ biến nào cần fetch giá');
+      return;
+    }
+    
+    console.log(`Sau khi lọc: fetch giá cho ${filteredAddresses.length}/${addresses.length} token (chỉ lấy token phổ biến)`);
+    
+    const MAX_CONCURRENT = 3; // Tăng lên 3 nhưng vẫn giữ an toàn cho Moralis API
     const batches = [];
     
+    console.log(`Batching fetch prices for ${filteredAddresses.length} tokens with batch size ${MAX_CONCURRENT}`);
+    
     // Split addresses into smaller batches
-    for (let i = 0; i < addresses.length; i += MAX_CONCURRENT) {
-      batches.push(addresses.slice(i, i + MAX_CONCURRENT));
+    for (let i = 0; i < filteredAddresses.length; i += MAX_CONCURRENT) {
+      batches.push(filteredAddresses.slice(i, i + MAX_CONCURRENT));
     }
     
     // Process batches sequentially to avoid overwhelming the API
     for (const batch of batches) {
       const promises = batch.map(async (address) => {
         try {
+          // Fetch price from Moralis API
+          const priceUrl = `${MORALIS_BASE_URL}/erc20/${address}/price?chain=bsc`;
+          requestLogger.logRequest(priceUrl, 'fetchTokenPrices');
+          
           const response = await fetch(
-            `${MORALIS_BASE_URL}/erc20/${address}/price?chain=bsc`,
+            priceUrl,
             {
               headers: {
                 'X-API-Key': MORALIS_API_KEY,
@@ -385,8 +438,11 @@ export class MoralisApiService {
    */
   async getETHPrice(): Promise<number> {
     try {
+      const ethPriceUrl = `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`;
+      requestLogger.logRequest(ethPriceUrl, 'getETHPrice');
+      
       const ethPriceResponse = await fetch(
-        `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`,
+        ethPriceUrl,
         {
           headers: {
             'X-API-Key': MORALIS_API_KEY,
@@ -439,6 +495,10 @@ export class MoralisApiService {
       console.log('Moralis API URL:', url);
       console.log('API Key:', this.apiKey.substring(0, 20) + '...');
 
+      // Fetch transactions from Moralis API
+      const txUrl = `${this.baseUrl}/${walletAddress}?chain=bsc`;
+      requestLogger.logRequest(txUrl, 'getTransactions');
+      
       const response = await fetch(url, {
         headers: {
           'X-API-Key': this.apiKey,
@@ -511,6 +571,20 @@ export class MoralisApiService {
       console.error('Error fetching transactions:', error);
       throw new Error('Không thể lấy lịch sử giao dịch');
     }
+  }
+
+  /**
+   * Hiển thị báo cáo tóm tắt các request đã gọi
+   */
+  printRequestSummary(): void {
+    requestLogger.printSummary();
+  }
+  
+  /**
+   * Reset thống kê request
+   */
+  resetRequestStats(): void {
+    requestLogger.reset();
   }
 
   async getTransactionByHash(hash: string): Promise<any | null> {

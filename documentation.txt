@@ -15,9 +15,8 @@ Finan Wallet là ứng dụng ví tiền điện tử di động chuyên dụng 
 
 ### Blockchain & Web3
 - **ethers.js**: Thư viện tương tác với blockchain Ethereum/BSC
-- **Moralis API**: API để truy vấn dữ liệu blockchain (số dư, giao dịch, token)
-- **1inch API**: API để thực hiện trao đổi token (swap) với slippage thấp
-- **CoinGecko API**: Lấy thông tin giá token và dữ liệu thị trường
+- **Moralis API**: API để truy vấn dữ liệu blockchain (số dư, giao dịch, token) và lấy giá token
+- **1inch API**: API để thực hiện trao đổi token (swap) với slippage thấp và lấy danh sách/hình ảnh token
 
 ### Bảo mật & Lưu trữ
 - **Expo SecureStore**: Lưu trữ bảo mật khóa riêng tư và thông tin nhạy cảm
@@ -163,8 +162,8 @@ src/
 
 ### API Keys & Rate Limits
 - Moralis API: 25 RPS (requests per second)
-- 1inch API: 60 RPM (requests per minute)
-- CoinGecko API: 10-50 RPM (depends on tier)
+- Moralis API: 30M CUs/month (chỉ sử dụng cho ~20 token phổ biến để tiết kiệm CUs)
+- 1inch API: 300 RPM
 
 ### Network Support
 - Hiện tại chỉ hỗ trợ BSC (Binance Smart Chain)

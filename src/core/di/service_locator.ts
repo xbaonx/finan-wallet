@@ -5,7 +5,6 @@ import { CryptoService } from '../../data/services/crypto_service';
 import { SecureStorageService } from '../../data/services/secure_storage_service';
 import { MoralisApiService } from '../../data/services/moralis_api_service';
 import { OneInchApiService } from '../../data/services/oneinch_api_service';
-import { CoinGeckoApiService } from '../../data/services/coingecko_api_service';
 
 // Repositories
 import { WalletRepository } from '../../domain/repositories/wallet_repository';
@@ -88,7 +87,6 @@ export class ServiceLocator {
     container.register('SecureStorageService', () => new SecureStorageService());
     container.register('MoralisApiService', () => new MoralisApiService());
     container.register('OneInchApiService', () => new OneInchApiService()); // API key sẽ được lấy từ api_config
-    container.register('CoinGeckoApiService', () => new CoinGeckoApiService());
 
     // Repositories
     container.register('WalletRepository', () => new WalletRepositoryImpl(
@@ -102,7 +100,6 @@ export class ServiceLocator {
     
     container.register('SwapRepository', () => new SwapRepositoryImpl(
       container.get('OneInchApiService'),
-      container.get('CoinGeckoApiService'),
       container.get('MoralisApiService')
     ));
 

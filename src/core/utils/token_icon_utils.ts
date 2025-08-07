@@ -145,18 +145,19 @@ const isLightColor = (hexColor: string): boolean => {
   return brightness > 128;
 };
 
-// Get token logo URI from various sources
+// Get token logo URI from 1inch API
 export function getTokenLogoUri(tokenAddress: string, symbol: string): string | undefined {
   try {
-    // Try CoinGecko API for token logo
-    const coingeckoId = getCoingeckoId(symbol);
-    if (coingeckoId) {
-      return `https://assets.coingecko.com/coins/images/${coingeckoId}/small/${symbol.toLowerCase()}.png`;
+    // Nếu có địa chỉ hợp lệ, sử dụng 1inch API
+    if (tokenAddress && tokenAddress !== '0x0000000000000000000000000000000000000000') {
+      return `https://tokens.1inch.io/${tokenAddress.toLowerCase()}.png`;
     }
     
-    // Fallback to Trust Wallet assets
-    if (tokenAddress && tokenAddress !== '0x0000000000000000000000000000000000000000') {
-      return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${tokenAddress}/logo.png`;
+    // Đối với một số token phổ biến không có địa chỉ
+    if (symbol === 'ETH') {
+      return 'https://tokens.1inch.io/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png';
+    } else if (symbol === 'BNB') {
+      return 'https://tokens.1inch.io/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png';
     }
   } catch (error) {
     console.warn('Error getting token logo URI:', error);
