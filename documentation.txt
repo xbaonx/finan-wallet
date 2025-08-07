@@ -1,0 +1,178 @@
+# FINAN WALLET - TÀI LIỆU MÔ TẢ ỨNG DỤNG
+
+## TỔNG QUAN
+
+Finan Wallet là ứng dụng ví tiền điện tử di động chuyên dụng cho Binance Smart Chain (BSC), cung cấp các tính năng quản lý, giao dịch và theo dõi tài sản crypto cho người dùng. Ứng dụng được phát triển bằng React Native và TypeScript, sử dụng Expo làm framework để tăng tốc quá trình phát triển và triển khai trên cả iOS và Android.
+
+## CÔNG NGHỆ SỬ DỤNG
+
+### Frontend
+- **React Native**: Framework để xây dựng ứng dụng di động đa nền tảng
+- **Expo**: SDK và nền tảng hỗ trợ phát triển React Native
+- **TypeScript**: Ngôn ngữ lập trình chính, mở rộng từ JavaScript với kiểu dữ liệu tĩnh
+- **React Navigation**: Quản lý điều hướng và routing trong ứng dụng
+- **React Native Paper**: Thư viện UI components theo chuẩn Material Design
+
+### Blockchain & Web3
+- **ethers.js**: Thư viện tương tác với blockchain Ethereum/BSC
+- **Moralis API**: API để truy vấn dữ liệu blockchain (số dư, giao dịch, token)
+- **1inch API**: API để thực hiện trao đổi token (swap) với slippage thấp
+- **CoinGecko API**: Lấy thông tin giá token và dữ liệu thị trường
+
+### Bảo mật & Lưu trữ
+- **Expo SecureStore**: Lưu trữ bảo mật khóa riêng tư và thông tin nhạy cảm
+- **Biometric Authentication**: Xác thực bằng sinh trắc học (vân tay, Face ID)
+- **PIN Code**: Xác thực bổ sung bằng mã PIN
+
+### Kiến trúc & Patterns
+- **BLoC Pattern**: Business Logic Component - quản lý state và logic nghiệp vụ
+- **Clean Architecture**: Phân tách thành các layer (presentation, domain, data)
+- **Repository Pattern**: Trừu tượng hóa nguồn dữ liệu
+- **Dependency Injection**: ServiceLocator để quản lý và cung cấp dependencies
+- **Singleton Pattern**: Được sử dụng cho các service toàn cục (GlobalTokenService)
+- **Observer Pattern**: Hệ thống event và listener để cập nhật UI
+
+## CÁC TÍNH NĂNG CHÍNH
+
+### 1. Quản lý ví
+- **Tạo ví mới**: Tạo ví BSC mới với seed phrase
+- **Nhập ví**: Import ví hiện có thông qua seed phrase hoặc private key
+- **Bảo mật ví**: Bảo vệ bằng PIN, sinh trắc học (vân tay, Face ID)
+- **Sao lưu & Khôi phục**: Hỗ trợ sao lưu và khôi phục ví thông qua seed phrase
+
+### 2. Dashboard
+- **Tổng quan tài sản**: Hiển thị tổng giá trị ví và danh sách token
+- **Biểu đồ phân bổ**: Trực quan hóa phân bổ tài sản
+- **Theo dõi giá**: Cập nhật giá realtime cho các token chính
+- **Chức năng refresh**: Cập nhật số dư và giá trị token
+
+### 3. Giao dịch token
+- **Mua token**: Mua token bằng BNB (token gốc của BSC)
+- **Bán token**: Bán token để nhận BNB
+- **Trao đổi (Swap)**: Đổi trực tiếp giữa các token (ví dụ: DAI -> USDT)
+- **Phê duyệt (Approve)**: Tự động phát hiện và yêu cầu approve token trước khi swap
+- **Quote**: Xem tỷ giá trao đổi và giá trị dự kiến nhận được trước khi giao dịch
+
+### 4. Gửi & Nhận crypto
+- **Gửi token**: Chuyển token đến địa chỉ khác
+- **Nhận token**: Tạo và chia sẻ địa chỉ ví để nhận token
+- **Quét QR code**: Hỗ trợ quét mã QR để nhập địa chỉ
+- **Quản lý phí gas**: Tự động đề xuất và cho phép điều chỉnh phí gas
+
+### 5. Lịch sử giao dịch
+- **Theo dõi giao dịch**: Xem tất cả giao dịch đã thực hiện
+- **Chi tiết giao dịch**: Hiển thị thông tin chi tiết về từng giao dịch
+- **Phân loại**: Phân loại giao dịch (gửi, nhận, swap, approve)
+- **Trạng thái**: Theo dõi trạng thái giao dịch (đang xử lý, hoàn thành, thất bại)
+
+### 6. Tối ưu hóa API & Cache
+- **GlobalTokenService**: Quản lý cache token toàn cục, giảm số lượng API call
+- **Batch API Calls**: Gộp nhiều request vào một lần gọi API
+- **Cache thông minh**: Lưu cache có thời hạn và tự động làm mới
+- **Invalidation**: Làm mới cache sau khi có giao dịch
+
+## FLOW NGƯỜI DÙNG
+
+### Onboarding Flow
+1. Màn hình chào mừng
+2. Lựa chọn tạo ví mới hoặc import ví
+3. Thiết lập bảo mật (PIN, sinh trắc học)
+4. Hoàn tất và vào màn hình chính
+
+### Authentication Flow
+1. Màn hình splash/loading
+2. Kiểm tra xác thực sinh trắc học (nếu có)
+3. Nhập PIN (nếu sinh trắc học không khả dụng)
+4. Vào ứng dụng sau khi xác thực thành công
+
+### Main Flow
+1. **Dashboard**: Hiển thị tổng quan tài sản
+2. **Swap**: Mua/bán/trao đổi token
+   - Chọn token muốn mua/bán/swap
+   - Nhập số lượng
+   - Xem quote và phê duyệt giao dịch
+   - Xác nhận và thực hiện giao dịch
+3. **Send/Receive**: Gửi/nhận token
+   - Gửi: Nhập địa chỉ, chọn token, nhập số lượng, xác nhận
+   - Nhận: Hiển thị địa chỉ ví và QR code
+4. **History**: Xem lịch sử giao dịch
+5. **Settings**: Cài đặt ứng dụng, đổi PIN, backup, v.v.
+
+## KIẾN TRÚC HỆ THỐNG
+
+### Cấu trúc thư mục
+```
+src/
+├── core/               # Core utilities, helpers, DI
+│   └── di/             # Dependency Injection system
+├── data/               # Data layer
+│   ├── repositories/   # Repository implementations
+│   ├── services/       # Services for API, crypto, storage
+│   └── sources/        # Data sources (API, local)
+├── domain/             # Domain layer 
+│   ├── entities/       # Business models
+│   ├── repositories/   # Repository interfaces
+│   └── usecases/       # Business logic use cases
+├── presentation/       # Presentation layer
+│   ├── blocs/          # BLoC components (state management)
+│   ├── navigation/     # Navigation configuration
+│   └── screens/        # UI screens
+└── services/           # Global services (cross-cutting concerns)
+    └── GlobalTokenService.ts # Token caching and optimization
+```
+
+### Data Flow
+1. **UI (Screen) -> BLoC**: UI gửi events đến BLoC
+2. **BLoC -> Use Case**: BLoC gọi use case để thực hiện logic nghiệp vụ
+3. **Use Case -> Repository**: Use case gọi repository để lấy/cập nhật dữ liệu
+4. **Repository -> Service/API**: Repository gọi service để thực hiện API calls
+5. **Repository -> BLoC -> UI**: Dữ liệu được trả về qua các layer và cập nhật UI
+
+## TỐI ƯU HOÁ VÀ PERFORMANCE
+
+### Tối ưu API calls
+- **GlobalTokenService**: Cung cấp cache token toàn cục, tránh gọi API trùng lặp
+- **Batch API**: Gộp nhiều request vào một lần gọi
+- **Cache thông minh**: Cache có thời hạn (1 phút), tự động refresh (5 phút)
+- **Cache invalidation**: Tự động làm mới sau khi có giao dịch
+
+### UI Performance
+- **Memoization**: Tránh render không cần thiết
+- **Lazy loading**: Chỉ tải dữ liệu khi cần thiết
+- **Virtual lists**: FlatList để hiển thị danh sách dài
+- **Image optimization**: Lazy load và cache hình ảnh token
+
+## BẢO MẬT
+
+### Lưu trữ khóa an toàn
+- Private key và seed phrase được mã hóa và lưu trữ an toàn
+- Không lưu trữ khóa riêng tư ở dạng plain text
+- Yêu cầu xác thực để truy cập khóa riêng tư
+
+### Xác thực đa lớp
+- Sinh trắc học (vân tay, Face ID)
+- Mã PIN
+- Thời gian timeout tự động đăng xuất
+
+### Giao dịch an toàn
+- Xác nhận giao dịch trước khi ký
+- Hiển thị chi tiết phí gas và tổng chi phí
+- Cảnh báo khi phát hiện giao dịch đáng ngờ
+
+## LƯU Ý PHÁT TRIỂN
+
+### API Keys & Rate Limits
+- Moralis API: 25 RPS (requests per second)
+- 1inch API: 60 RPM (requests per minute)
+- CoinGecko API: 10-50 RPM (depends on tier)
+
+### Network Support
+- Hiện tại chỉ hỗ trợ BSC (Binance Smart Chain)
+- Cấu trúc sẵn sàng mở rộng thêm mạng khác trong tương lai
+
+### Mở rộng trong tương lai
+- Hỗ trợ thêm mạng blockchain khác
+- Tích hợp DeFi (staking, farming, lending)
+- Hỗ trợ NFT
+- Tích hợp với ví phần cứng (Ledger, Trezor)
+- Push notifications cho giao dịch và thay đổi giá
