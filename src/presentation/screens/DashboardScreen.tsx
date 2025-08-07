@@ -161,7 +161,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.errorMessage}>{error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => dashboardBloc.add(new LoadDashboardEvent())}
+            onPress={() => dashboardBloc?.add(new LoadDashboardEvent())}
             activeOpacity={0.8}
           >
             <Text style={styles.retryButtonText}>Thử lại</Text>

@@ -1,16 +1,21 @@
 import { DashboardEvent, LoadDashboardEvent, RefreshDashboardEvent, LoadWalletEvent, LoadTokenListEvent, LoadTotalBalanceEvent } from './dashboard_event';
+import { GlobalTokenService } from '../../services/GlobalTokenService';
 import { DashboardState, DashboardInitial, DashboardLoading, DashboardLoaded, DashboardRefreshing, DashboardError } from './dashboard_state';
 import { GetWalletBalanceUseCase, GetCurrentWalletUseCase, RefreshWalletDataUseCase } from '../../domain/usecases/dashboard_usecases';
 
 export class DashboardBloc {
   private _state: DashboardState = new DashboardInitial();
   private _listeners: ((state: DashboardState) => void)[] = [];
+  private globalTokenService = GlobalTokenService.getInstance();
 
   constructor(
     private getWalletBalanceUseCase: GetWalletBalanceUseCase,
     private getCurrentWalletUseCase: GetCurrentWalletUseCase,
     private refreshWalletDataUseCase: RefreshWalletDataUseCase
-  ) {}
+  ) {
+    // Đăng ký lắng nghe cập nhật từ GlobalTokenService
+    this.globalTokenService.addListener(this._handleTokenBalanceUpdated.bind(this));
+  }
 
   get state(): DashboardState {
     return this._state;
@@ -50,9 +55,25 @@ export class DashboardBloc {
     try {
       this.emit(new DashboardLoading());
       
-      const { wallet, balance } = await this.refreshWalletDataUseCase.execute();
+      // Sử dụng GlobalTokenService để lấy số dư token từ cache hoặc API
+      console.log('🔍 DashboardBloc: Đang tải dữ liệu ví và số dư token...');
       
-      this.emit(new DashboardLoaded(wallet, balance));
+      // Lấy thông tin ví
+      const wallet = await this.getCurrentWalletUseCase.execute();
+      if (!wallet) {
+        this.emit(new DashboardError('Không tìm thấy ví'));
+        return;
+      }
+      
+      // Lấy số dư từ GlobalTokenService
+      const walletBalance = await this.globalTokenService.getWalletBalance(false);
+      
+      if (!walletBalance) {
+        this.emit(new DashboardError('Không thể tải số dư token'));
+        return;
+      }
+      
+      this.emit(new DashboardLoaded(wallet, walletBalance));
     } catch (error) {
       this.emit(new DashboardError(`Lỗi tải dashboard: ${error}`));
     }
@@ -60,16 +81,31 @@ export class DashboardBloc {
 
   private async _handleRefreshDashboard(): Promise<void> {
     try {
-      // If we have existing data, show refreshing state
+      // Nếu đã có dữ liệu, hiển thị trạng thái đang làm mới
       if (this._state instanceof DashboardLoaded) {
         this.emit(new DashboardRefreshing(this._state.wallet, this._state.balance));
       } else {
         this.emit(new DashboardLoading());
       }
       
-      const { wallet, balance } = await this.refreshWalletDataUseCase.execute();
+      console.log('🔄 DashboardBloc: Đang làm mới dữ liệu ví và số dư token...');
       
-      this.emit(new DashboardLoaded(wallet, balance));
+      // Lấy thông tin ví mới
+      const wallet = await this.getCurrentWalletUseCase.execute();
+      if (!wallet) {
+        this.emit(new DashboardError('Không tìm thấy ví'));
+        return;
+      }
+      
+      // Làm mới số dư token từ GlobalTokenService (force refresh)
+      const walletBalance = await this.globalTokenService.getWalletBalance(true);
+      
+      if (!walletBalance) {
+        this.emit(new DashboardError('Không thể tải số dư token'));
+        return;
+      }
+      
+      this.emit(new DashboardLoaded(wallet, walletBalance));
     } catch (error) {
       this.emit(new DashboardError(`Lỗi làm mới dashboard: ${error}`));
     }
@@ -90,11 +126,18 @@ export class DashboardBloc {
 
   private async _handleLoadTokenList(): Promise<void> {
     try {
-      const balance = await this.getWalletBalanceUseCase.execute();
+      // Sử dụng GlobalTokenService để lấy số dư token
+      console.log('🔍 DashboardBloc: Đang tải danh sách token từ GlobalTokenService...');
+      const walletBalance = await this.globalTokenService.getWalletBalance(false);
       
-      // If we already have wallet data, keep it
+      if (!walletBalance) {
+        console.error('❌ DashboardBloc: Không thể tải danh sách token');
+        return;
+      }
+      
+      // Nếu đã có dữ liệu ví, giữ lại
       if (this._state instanceof DashboardLoaded) {
-        this.emit(new DashboardLoaded(this._state.wallet, balance));
+        this.emit(new DashboardLoaded(this._state.wallet, walletBalance));
       }
     } catch (error) {
       this.emit(new DashboardError(`Lỗi tải danh sách token: ${error}`));
@@ -103,14 +146,28 @@ export class DashboardBloc {
 
   private async _handleLoadTotalBalance(): Promise<void> {
     try {
-      const balance = await this.getWalletBalanceUseCase.execute();
+      // Lấy số dư từ GlobalTokenService
+      const walletBalance = await this.globalTokenService.getWalletBalance(false);
       
-      // If we already have wallet data, keep it
-      if (this._state instanceof DashboardLoaded) {
-        this.emit(new DashboardLoaded(this._state.wallet, balance));
+      // Nếu đã có dữ liệu ví, cập nhật số dư
+      if (this._state instanceof DashboardLoaded && walletBalance) {
+        this.emit(new DashboardLoaded(this._state.wallet, walletBalance));
       }
     } catch (error) {
       this.emit(new DashboardError(`Lỗi tải tổng số dư: ${error}`));
+    }
+  }
+
+  /**
+   * Hàm xử lý khi GlobalTokenService cập nhật dữ liệu số dư
+   * Được gọi tự động khi GlobalTokenService thông báo có dữ liệu mới
+   */
+  private _handleTokenBalanceUpdated(): void {
+    console.log('🔔 DashboardBloc: Nhận được thông báo cập nhật số dư từ GlobalTokenService');
+    
+    // Chỉ cập nhật nếu đã có dữ liệu ví
+    if (this._state instanceof DashboardLoaded) {
+      this._handleLoadTotalBalance();
     }
   }
 

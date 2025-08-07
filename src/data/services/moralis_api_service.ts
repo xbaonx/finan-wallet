@@ -6,6 +6,7 @@ import {
   MoralisPriceResponse 
 } from '../types/moralis_types';
 import { priceCacheService } from './price_cache_service';
+import { logoCacheService } from './logo_cache_service';
 import { transactionCacheService } from './transaction_cache_service';
 
 const MORALIS_API_KEY = API_CONFIG.MORALIS.API_KEY;
@@ -189,12 +190,13 @@ export class MoralisApiService {
           if (token.balance && token.decimals) {
             const balance = parseFloat(token.balance) / Math.pow(10, parseInt(token.decimals.toString()));
             
-            // Only include tokens with meaningful balance (> $0.01 equivalent or common tokens)
+            // Hiển thị tất cả token có trong ví, không cần lọc theo số dư tối thiểu
             const isCommonToken = COMMON_TOKENS.some(ct => 
               ct.address.toLowerCase() === token.token_address.toLowerCase()
             );
 
-            if (balance > 0.01 || isCommonToken) {
+            // Hiển thị tất cả token có số dư > 0
+            if (balance > 0) {
               tokensToProcess.push({ token, balance, isCommonToken });
               
               // Check if price is cached
@@ -226,16 +228,22 @@ export class MoralisApiService {
             }
           }
 
-          // Find logo from common tokens or use default
-          const commonToken = COMMON_TOKENS.find(ct => 
-            ct.address.toLowerCase() === token.token_address.toLowerCase()
-          );
-
+          // Chỉ sử dụng logo từ Moralis API và cache
+          
+          // Lấy logo từ cache hoặc cache logo mới
+          let logoUrl = logoCacheService.getCachedLogo(token.token_address);
+          
+          if (!logoUrl && token.logo) {
+            // Lưu logo mới vào cache
+            logoCacheService.setCachedLogo(token.token_address, token.logo, token.symbol);
+            logoUrl = token.logo;
+          }
+          
           tokens.push({
             name: token.name || token.symbol,
             symbol: token.symbol,
             address: token.token_address,
-            logoUri: commonToken?.logoUri || token.logo || 'https://via.placeholder.com/32',
+            logoUri: logoUrl || 'https://via.placeholder.com/32',
             balance: balance.toFixed(6),
             priceUSD: tokenPrice,
             chainId: 56,

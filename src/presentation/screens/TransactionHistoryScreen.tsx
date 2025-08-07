@@ -291,7 +291,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
       return (
         <FlatList
           data={state.transactions}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item.id}_${item.tokenSymbol}`}
           renderItem={renderTransactionItem}
           refreshControl={
             <RefreshControl

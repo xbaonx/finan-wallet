@@ -18,8 +18,8 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SwapBloc } from '../blocs/swap_bloc';
-import { SwapState, SwapInitialState, SwapLoadingState, SwapErrorState, TokensLoadedState, SwapConfiguredState, QuoteLoadingState, QuoteLoadedState, ApprovingTokenState, SwapSuccessState, SwapFailedState } from '../blocs/swap_state';
-import { LoadSupportedTokensEvent, SearchTokensEvent, SelectSwapTypeEvent, SelectFromTokenEvent, SelectToTokenEvent, UpdateFromAmountEvent, GetSwapQuoteEvent, ConfirmSwapEvent, ResetSwapEvent, ApproveTokenEvent } from '../blocs/swap_event';
+import { SwapState, SwapInitialState, SwapLoadingState, SwapErrorState, TokensLoadedState, SwapConfiguredState, QuoteLoadingState, QuoteLoadedState, ApprovingTokenState, TokenApprovedState, SwapSuccessState, SwapFailedState } from '../blocs/swap_state';
+import { LoadSupportedTokensEvent, SearchTokensEvent, SelectSwapTypeEvent, SelectFromTokenEvent, SelectToTokenEvent, UpdateFromAmountEvent, GetSwapQuoteEvent, ConfirmSwapEvent, ResetSwapEvent, ApproveTokenEvent, RefreshTokenBalancesEvent } from '../blocs/swap_event';
 import { TokenInfo, SwapType, SwapRequest } from '../../domain/entities/swap_entity';
 import { ethers } from 'ethers';
 import { ServiceLocator } from '../../core/di/service_locator';
@@ -39,15 +39,14 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
     return price < 0.01 ? `$${price.toFixed(6)}` : `$${price.toFixed(2)}`;
   };
 
-  const formatPriceChange = (change?: number) => {
-    if (!change) return '0.00%';
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)}%`;
-  };
-
-  const getPriceChangeColor = (change?: number) => {
-    if (!change) return '#6b7280';
-    return change >= 0 ? '#10b981' : '#ef4444';
+  const formatBalance = (balance?: string) => {
+    if (!balance) return '0';
+    const balanceNum = parseFloat(balance);
+    if (balanceNum === 0) return '0';
+    if (balanceNum < 0.0001) return '< 0.0001';
+    if (balanceNum < 1) return balanceNum.toFixed(4);
+    if (balanceNum < 1000) return balanceNum.toFixed(2);
+    return `${(balanceNum / 1000).toFixed(2)}K`;
   };
 
   return (
@@ -92,12 +91,24 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
           }}>
             {token.symbol}
           </Text>
-          <Text style={{
-            fontSize: 14,
-            color: '#6b7280',
-          }}>
-            {token.name}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{
+              fontSize: 14,
+              color: '#6b7280',
+            }}>
+              {token.name}
+            </Text>
+            {token.balance && parseFloat(token.balance) > 0 && (
+              <Text style={{
+                fontSize: 14,
+                color: '#047857',
+                fontWeight: '500',
+                marginLeft: 8,
+              }}>
+                {formatBalance(token.balance)} {token.symbol}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
 
@@ -107,15 +118,8 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
           fontSize: 16,
           fontWeight: '600',
           color: '#111827',
-          marginBottom: 2,
         }}>
           {formatPrice(token.priceUSD)}
-        </Text>
-        <Text style={{
-          fontSize: 14,
-          color: getPriceChangeColor(token.priceChange24h),
-        }}>
-          {formatPriceChange(token.priceChange24h)}
         </Text>
       </View>
 
@@ -199,6 +203,19 @@ const SwapModal: React.FC<SwapModalProps> = ({
   approvingToken = false,
   quote,
 }) => {
+  // Debug log khi props thay đổi
+  React.useEffect(() => {
+    if (visible) {
+      console.log('💵 SwapModal state:', {
+        token: token?.symbol,
+        swapType,
+        needsApproval,
+        allowanceAmount,
+        approvingToken,
+        hasQuote: !!quote
+      });
+    }
+  }, [visible, token, swapType, needsApproval, allowanceAmount, approvingToken, quote]);
   const [amount, setAmount] = useState('');
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -231,11 +248,11 @@ const SwapModal: React.FC<SwapModalProps> = ({
   };
 
   const getFromToken = () => {
-    return swapType === SwapType.BUY ? 'USDT' : token?.symbol || '';
+    return swapType === SwapType.BUY ? 'DAI' : token?.symbol || '';
   };
 
   const getToToken = () => {
-    return swapType === SwapType.BUY ? token?.symbol || '' : 'USDT';
+    return swapType === SwapType.BUY ? token?.symbol || '' : 'DAI';
   };
 
   const handleAmountChange = (newAmount: string) => {
@@ -495,23 +512,34 @@ const SwapModal: React.FC<SwapModalProps> = ({
             {needsApproval && amount && quote ? (
               <TouchableOpacity
                 style={{
-                  backgroundColor: approvingToken ? '#d1d5db' : '#f59e0b',
+                  backgroundColor: '#10b981',
                   borderRadius: 12,
                   paddingVertical: 16,
                   alignItems: 'center',
+                  opacity: approvingToken ? 0.7 : 1
                 }}
                 onPress={() => onApprove && onApprove(amount)}
                 disabled={approvingToken}
               >
                 {approvingToken ? (
-                  <ActivityIndicator color="white" />
+                  <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+                    <ActivityIndicator color="white" size="small" />
+                    <Text style={{
+                      color: 'white',
+                      fontSize: 16,
+                      fontWeight: '600',
+                      marginLeft: 8
+                    }}>
+                      Đang phê duyệt...
+                    </Text>
+                  </View>
                 ) : (
                   <Text style={{
                     color: 'white',
                     fontSize: 16,
                     fontWeight: '600',
                   }}>
-                    Approve {getFromToken()}
+                    Phê duyệt {getFromToken()}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -522,12 +550,23 @@ const SwapModal: React.FC<SwapModalProps> = ({
                   borderRadius: 12,
                   paddingVertical: 16,
                   alignItems: 'center',
+                  opacity: (!amount || !quote || loading) ? 0.7 : 1
                 }}
                 onPress={() => onConfirm(amount)}
                 disabled={!amount || !quote || loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="white" />
+                  <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+                    <ActivityIndicator color="white" size="small" />
+                    <Text style={{
+                      color: 'white',
+                      fontSize: 16,
+                      fontWeight: '600',
+                      marginLeft: 8
+                    }}>
+                      Đang xử lý...
+                    </Text>
+                  </View>
                 ) : (
                   <Text style={{
                     color: 'white',
@@ -559,17 +598,48 @@ export const SwapScreen: React.FC = () => {
   const getCurrentWalletUseCase = ServiceLocator.get<GetCurrentWalletUseCase>('GetCurrentWalletUseCase');
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   
-  // Preserve tokens from TokensLoadedState across other states
+  // Cache tokens để giữ danh sách khi chuyển trạng thái
   const [cachedTokens, setCachedTokens] = useState<TokenInfo[]>([]);
+  
+  // State để theo dõi trạng thái approve token
+  const [isApprovingToken, setIsApprovingToken] = useState<boolean>(false);
 
   useEffect(() => {
+    // Xử lý sự thay đổi trạng thái từ SwapBloc
     const handleStateChange = (newState: SwapState) => {
+      console.log('⚡ SwapScreen state change:', newState.constructor.name);
       setState(newState);
       
-      // Cache tokens when TokensLoadedState is received
+      // Lưu danh sách token khi nhận được TokensLoadedState
       if (newState instanceof TokensLoadedState) {
         setCachedTokens(newState.filteredTokens);
         console.log('💾 Cached tokens count:', newState.filteredTokens.length);
+      }
+      
+      // Cập nhật trạng thái approve token
+      if (newState instanceof ApprovingTokenState) {
+        setIsApprovingToken(true);
+      } else if (newState instanceof TokenApprovedState || 
+                newState instanceof SwapErrorState || 
+                newState instanceof SwapFailedState) {
+        setIsApprovingToken(false);
+      }
+      
+      // Xử lý khi swap hoàn tất (thành công hoặc thất bại)
+      if (newState instanceof SwapSuccessState) {
+        // Hiển thị thông báo thành công với chi tiết
+        Alert.alert(
+          '✅ Swap Thành Công',
+          `Bạn đã swap ${newState.fromAmount} ${newState.fromTokenSymbol} thành ${newState.toAmount} ${newState.toTokenSymbol} thành công!`,
+          [{ text: 'Đóng', onPress: () => closeAndResetSwapModal() }]
+        );
+      } else if (newState instanceof SwapFailedState) {
+        // Hiển thị thông báo lỗi
+        Alert.alert(
+          '❌ Swap Thất Bại',
+          `Không thể swap: ${newState.error}`,
+          [{ text: 'Đóng', onPress: () => closeAndResetSwapModal() }]
+        );
       }
     };
 
@@ -611,91 +681,123 @@ export const SwapScreen: React.FC = () => {
   };
 
   const handleGetQuote = (amount: string) => {
-    if (!selectedToken || !amount) return;
+    // Kiểm tra dữ liệu đầu vào
+    if (!selectedToken) {
+      console.warn('Không thể lấy báo giá: Chưa chọn token');
+      return;
+    }
+    
+    if (!amount || parseFloat(amount) <= 0) {
+      console.warn('Không thể lấy báo giá: Số lượng không hợp lệ');
+      return;
+    }
+    
+    // Dọn dẹp số lượng để đảm bảo định dạng đúng
+    const cleanAmount = amount.trim();
 
+    // Tạo request lấy báo giá swap
     const request: SwapRequest = {
       fromToken: swapType === SwapType.BUY ? 
-        { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 } : 
+        { symbol: 'DAI', name: 'Dai Stablecoin', address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', decimals: 18 } : 
         selectedToken,
       toToken: swapType === SwapType.BUY ? 
         selectedToken : 
-        { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 },
-      fromAmount: amount,
+        { symbol: 'DAI', name: 'Dai Stablecoin', address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', decimals: 18 },
+      fromAmount: cleanAmount,
       fromAddress: walletAddress || '0x0000000000000000000000000000000000000000',
       slippage: 1,
     };
 
-    // Debug logging
-    console.log('🎯 Swap Request Debug:');
-    console.log('Selected Token:', selectedToken);
-    console.log('Swap Type:', swapType);
-    console.log('Amount:', amount);
-    console.log('Wallet Address:', walletAddress);
-    console.log('From Token:', request.fromToken);
-    console.log('To Token:', request.toToken);
+    // Debug log
+    console.log('🔍 Yêu cầu báo giá swap:', {
+      type: swapType === SwapType.BUY ? 'MUA' : 'BÁN',
+      from: `${cleanAmount} ${request.fromToken.symbol}`,
+      to: request.toToken.symbol,
+      walletAddress: request.fromAddress
+    });
 
-    // Chỉ lấy quote, không thực hiện swap
+    // Gửi request lấy báo giá
     swapBloc.add(new GetSwapQuoteEvent(request));
   };
 
   const handleSwapConfirm = (amount: string) => {
-    if (!selectedToken || !amount) return;
+    if (!selectedToken || !amount) {
+      console.warn('Không thể xác nhận swap: Thiếu token hoặc số lượng');
+      return;
+    }
 
+    // Tạo request với thông tin swap
     const request: SwapRequest = {
       fromToken: swapType === SwapType.BUY ? 
-        { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 } : 
+        { symbol: 'DAI', name: 'Dai Stablecoin', address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', decimals: 18 } : 
         selectedToken,
       toToken: swapType === SwapType.BUY ? 
         selectedToken : 
-        { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 },
+        { symbol: 'DAI', name: 'Dai Stablecoin', address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', decimals: 18 },
       fromAmount: amount,
       fromAddress: walletAddress || '0x0000000000000000000000000000000000000000',
       slippage: 1,
     };
 
-    // Thực hiện swap thật (có thể trigger approve trước)
+    // Debug log
+    console.log('🚀 Xác nhận swap:', {
+      type: swapType === SwapType.BUY ? 'MUA' : 'BÁN',
+      from: request.fromToken.symbol,
+      to: request.toToken.symbol,
+      amount: amount
+    });
+
+    // Thực hiện swap
     swapBloc.add(new ConfirmSwapEvent(request));
   };
 
   const handleApprove = (amount: string) => {
-    if (!selectedToken || !amount) return;
+    if (!selectedToken || !amount) {
+      console.warn('Không thể approve: Thiếu token hoặc số lượng');
+      return;
+    }
 
+    // Xác định token cần approve
     const tokenAddress = swapType === SwapType.BUY ? 
-      '0x55d398326f99059fF775485246999027B3197955' : // USDT BSC
+      '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3' : // DAI BSC
       selectedToken.address;
     
-    const spenderAddress = '0x111111125421ca6dc452d289314280a0f8842a65'; // 1inch BSC router
+    const tokenSymbol = swapType === SwapType.BUY ? 'DAI' : selectedToken.symbol;
+    const tokenDecimals = swapType === SwapType.BUY ? 18 : selectedToken.decimals;
+    
+    // Địa chỉ router của 1inch trên BSC
+    const spenderAddress = '0x111111125421ca6dc452d289314280a0f8842a65'; 
     const ownerAddress = walletAddress || '0x0000000000000000000000000000000000000000';
-
-    console.log('🔐 Approving token:', {
-      tokenAddress,
-      spenderAddress,
-      amount,
-      ownerAddress
-    });
-
+    
+    // Hiển thị xác nhận approve
     Alert.alert(
-      'Approve Token',
-      `Bạn cần approve ${amount} ${swapType === SwapType.BUY ? 'USDT' : selectedToken.symbol} để tiếp tục swap.\n\nĐây là bước bắt buộc để 1inch có thể sử dụng token của bạn.`,
+      'Cấp quyền sử dụng token',
+      `Bạn cần approve ${amount} ${tokenSymbol} để tiếp tục swap.\n\nĐây là bước bắt buộc để 1inch có thể sử dụng token của bạn cho giao dịch.`,
       [
         { text: 'Hủy', style: 'cancel' },
         { 
           text: 'Approve', 
           onPress: () => {
-            console.log('User confirmed approve - triggering ApproveTokenEvent');
-            
-            // Convert amount to wei for approve
-            const amountWei = swapType === SwapType.BUY ? 
-              ethers.parseUnits(amount, 18).toString() : // USDT BSC has 18 decimals
-              ethers.parseUnits(amount, selectedToken.decimals).toString();
-            
-            // Trigger real approve event
-            swapBloc.add(new ApproveTokenEvent(
-              tokenAddress,
-              spenderAddress, 
-              amountWei,
-              ownerAddress
-            ));
+            try {
+              console.log(`🔐 Đang approve ${amount} ${tokenSymbol}...`);
+              
+              // Convert số lượng sang wei để gửi đúng định dạng
+              const amountWei = ethers.parseUnits(amount, tokenDecimals).toString();
+              
+              // Gọi approve token event
+              swapBloc.add(new ApproveTokenEvent(
+                tokenAddress,
+                spenderAddress, 
+                amountWei,
+                ownerAddress
+              ));
+            } catch (error) {
+              console.error('Lỗi khi approve token:', error);
+              Alert.alert(
+                'Lỗi Approve Token',
+                `Không thể approve ${tokenSymbol}. Vui lòng thử lại.`
+              );
+            }
           }
         }
       ]
@@ -706,6 +808,27 @@ export const SwapScreen: React.FC = () => {
     setRefreshing(true);
     swapBloc.add(new LoadSupportedTokensEvent());
     setTimeout(() => setRefreshing(false), 1000);
+  };
+  
+  // Hàm đóng modal và reset trạng thái sau khi swap hoàn tất
+  const closeAndResetSwapModal = () => {
+    console.log('🔄 Đóng modal và reset trạng thái...');
+    
+    // Đóng modal trước
+    setShowSwapModal(false);
+    
+    // Đợi animation đóng modal hoàn tất
+    setTimeout(() => {
+      // Reset token đã chọn
+      setSelectedToken(null);
+      
+      // Reset state trong SwapBloc
+      swapBloc.add(new ResetSwapEvent());
+      
+      // Cập nhật lại danh sách token và số dư
+      console.log('🔄 Refresh token balances cho địa chỉ:', walletAddress);
+      swapBloc.add(new RefreshTokenBalancesEvent(walletAddress));
+    }, 500);
   };
 
   const getFilteredTokens = () => {
@@ -783,9 +906,9 @@ export const SwapScreen: React.FC = () => {
 
   const getTabDescription = () => {
     if (activeTab === 'buy') {
-      return 'Sử dụng USDT/ETH để mua các coin khác';
+      return 'Sử dụng DAI để mua các coin khác';
     } else {
-      return 'Bán các coin có sẵn trong ví để nhận USDT/ETH';
+      return 'Bán các coin có sẵn trong ví để nhận DAI';
     }
   };
 

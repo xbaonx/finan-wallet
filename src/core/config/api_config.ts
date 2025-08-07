@@ -21,13 +21,11 @@ export const API_CONFIG = {
     API_KEY: 'lfkI2Bca3G4qdGpiFx62yuoDS2hXetVu',
     BASE_URL: 'https://api.1inch.dev',
     CHAIN_ID: 56, // BSC mainnet
-    USE_FUSION: true, // Enable gasless swaps
     ENDPOINTS: {
       TOKENS: '/swap/v6.0/{chainId}/tokens',
       QUOTE: '/swap/v6.0/{chainId}/quote',
       SWAP: '/swap/v6.0/{chainId}/swap',
-      APPROVE: '/swap/v6.0/{chainId}/approve/transaction',
-      FUSION: '/fusion/v1.0/{chainId}'
+      APPROVE: '/swap/v6.0/{chainId}/approve/transaction'
     }
   },
 
@@ -48,6 +46,13 @@ export const API_CONFIG = {
 
 // Common BEP-20 tokens to track on BSC
 export const COMMON_TOKENS = [
+  {
+    address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', // DAI BSC
+    symbol: 'DAI',
+    name: 'Dai Stablecoin',
+    decimals: 18,
+    logoUri: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png'
+  },
   {
     address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC BSC
     symbol: 'USDC',

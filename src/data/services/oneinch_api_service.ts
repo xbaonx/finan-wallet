@@ -7,7 +7,7 @@ export class OneInchApiService {
   private readonly apiKey: string;
   private readonly chainId: number;
   private readonly maxRetries = 3;
-  private readonly useFusion: boolean;
+
   private readonly endpoints: any;
 
   constructor(apiKey?: string) {
@@ -15,22 +15,30 @@ export class OneInchApiService {
     this.apiKey = apiKey || API_CONFIG.ONEINCH.API_KEY;
     this.baseUrl = API_CONFIG.ONEINCH.BASE_URL;
     this.chainId = API_CONFIG.ONEINCH.CHAIN_ID;
-    this.useFusion = API_CONFIG.ONEINCH.USE_FUSION;
     this.endpoints = API_CONFIG.ONEINCH.ENDPOINTS;
     
-    console.log(`🔄 OneInchApiService initialized with chainId: ${this.chainId}, useFusion: ${this.useFusion}`);
+    console.log(`🔄 OneInchApiService initialized with chainId: ${this.chainId}`);
   }
 
   private convertToWei(amount: string, decimals: number): string {
     try {
-      // Parse amount as float and convert to wei
-      const amountFloat = parseFloat(amount);
-      if (isNaN(amountFloat)) {
-        throw new Error('Invalid amount');
+      // Validate amount first
+      const amountStr = amount.trim();
+      if (!amountStr || amountStr === '0') {
+        return '0';
       }
       
-      // Convert to wei using ethers parseUnits
-      return ethers.parseUnits(amount, decimals).toString();
+      // Parse amount and check if it's valid
+      if (!/^\d*\.?\d+$/.test(amountStr)) {
+        console.error('Invalid amount format:', amountStr);
+        throw new Error('Invalid amount format');
+      }
+      
+      // Convert to wei using ethers parseUnits - handle large numbers correctly
+      console.log(`🔢 Converting ${amountStr} to wei with ${decimals} decimals`);
+      const result = ethers.parseUnits(amountStr, decimals).toString();
+      console.log(`🔢 Result: ${result}`);
+      return result;
     } catch (error) {
       console.error('Error converting to wei:', error);
       return '0';
@@ -45,12 +53,15 @@ export class OneInchApiService {
         return '0';
       }
       
-      // Convert from wei using ethers formatUnits
-      const result = ethers.formatUnits(amountWei, decimals);
+      // Ensure we're dealing with a valid string for large numbers
+      const amountWeiString = amountWei.toString().trim();
       
-      // Debug logging for small amounts
+      // Convert from wei using ethers formatUnits
+      const result = ethers.formatUnits(amountWeiString, decimals);
+      
+      // Debug logging for all amounts
       console.log('🔢 convertFromWei Debug:');
-      console.log('Input amountWei:', amountWei);
+      console.log('Input amountWei:', amountWeiString);
       console.log('Decimals:', decimals);
       console.log('Result:', result);
       
@@ -102,6 +113,21 @@ export class OneInchApiService {
           if (response.status === 429) {
             throw new Error('Quá nhiều yêu cầu, vui lòng thử lại sau');
           } else if (response.status === 400) {
+            // Kiểm tra xem có phải lỗi không đủ số dư không
+            if (errorText.includes('Not enough') && errorText.includes('balance')) {
+              // Trích xuất thông tin token từ lỗi
+              const tokenMatch = errorText.match(/Not enough ([a-fA-F0-9x]+) balance/);
+              const amountMatch = errorText.match(/Amount: (\d+)/);
+              const balanceMatch = errorText.match(/Balance: (\d+)/);
+              
+              if (tokenMatch && amountMatch && balanceMatch) {
+                const tokenAddress = tokenMatch[1];
+                const requiredAmount = amountMatch[1];
+                const currentBalance = balanceMatch[1];
+                
+                throw new Error(`Không đủ số dư token. Cần: ${this.convertFromWei(requiredAmount, 18)}, Có: ${this.convertFromWei(currentBalance, 18)}. Vui lòng nạp thêm token vào ví.`);
+              }
+            }
             throw new Error(`Thông tin không hợp lệ: ${errorText}`);
           } else if (response.status === 403) {
             throw new Error('API key không hợp lệ hoặc bị từ chối');
@@ -270,43 +296,66 @@ export class OneInchApiService {
     const amountWei = this.convertToWei(fromAmount, fromToken.decimals);
     console.log(`💰 Amount in wei: ${amountWei}`);
 
-    const params = {
-      src: fromToken.address,
-      dst: toToken.address,
-      amount: amountWei,
-      from: fromAddress,
-      slippage: slippage.toString(),
-      disableEstimate: 'false'
-    };
-
-    // Kiểm tra xem có sử dụng Fusion hay không
-    let endpoint;
-    if (this.useFusion) {
-      endpoint = this.endpoints.FUSION.replace('{chainId}', this.chainId.toString());
-      console.log('🔥 Using 1inch Fusion API for gasless swap!');
-    } else {
-      endpoint = this.endpoints.SWAP.replace('{chainId}', this.chainId.toString());
-      console.log('💧 Using standard 1inch Swap API');
-    }
+    // Kiểm tra allowance trước khi swap để đảm bảo có quyền chi tiêu token
+    const allowance = await this.checkAllowance(fromToken.address, fromAddress);
+    console.log(`🔓 Current allowance: ${allowance}`);
     
-    console.log('🌐 Using endpoint:', `${this.baseUrl}${endpoint}`);
-
+    // So sánh số allowance với số lượng cần swap bằng số nguyên
     try {
-      const response = await this.makeRequest(endpoint, params);
-      console.log('✅ Swap transaction built successfully');
+      // Đảm bảo cả hai giá trị là string và dọn dẹp nếu cần
+      const allowanceStr = allowance.toString().trim();
+      const amountWeiStr = amountWei.toString().trim();
       
-      // Cấu trúc response có thể khác nhau giữa Fusion và Standard API
-      const txData = this.useFusion ? response.tx : response.tx;
+      // Log để debug
+      console.log(`🔍 Comparing allowance (${allowanceStr}) with amount (${amountWeiStr})`);
+      
+      // Kiểm tra allowance
+      if (allowanceStr === '0' || BigInt(allowanceStr) < BigInt(amountWeiStr)) {
+        console.warn(`⚠️ Allowance ${allowanceStr} thấp hơn số lượng cần swap ${amountWeiStr}`);
+        console.warn('⚠️ Cần phê duyệt chi tiêu token trước khi swap');
+        throw new Error(`Không đủ quyền chi tiêu token. Hãy phê duyệt trước.`);
+      }
+    } catch (error) {
+      // Nếu có lỗi BigInt conversion, xử lý an toàn
+      console.error('Error comparing allowance with amount:', error);
+      throw new Error(`Không thể kiểm tra quyền chi tiêu token. Hãy phê duyệt trước.`);
+    }
+
+    // Sử dụng API swap tiêu chuẩn của 1inch
+    try {
+      // Tham số cho 1inch Swap API
+      const standardSwapParams = {
+        src: fromToken.address,
+        dst: toToken.address,
+        amount: amountWei,
+        from: fromAddress,
+        slippage: slippage.toString(),
+        // Các tham số thêm theo tài liệu 1inch API v6.0
+        receiver: fromAddress, // địa chỉ nhận token, mặc định là người gửi
+        disableEstimate: 'false',
+        includeTokensInfo: 'true',
+        includeProtocols: 'true',
+        includeGas: 'true'
+      };
+      
+      const endpoint = this.endpoints.SWAP.replace('{chainId}', this.chainId.toString());
+      console.log('💧 Using standard 1inch Swap API (requires BNB for gas)');
+      console.log('🌐 Using endpoint:', `${this.baseUrl}${endpoint}`);
+      console.log('🔍 API parameters:', standardSwapParams);
+      
+      const response = await this.makeRequest(endpoint, standardSwapParams);
+      console.log('✅ Standard swap transaction built successfully');
+      console.log('🔥 Response debug:', JSON.stringify(response, null, 2));
       
       return {
-        to: txData.to,
-        data: txData.data,
-        value: txData.value,
-        gas: txData.gas,
-        gasPrice: txData.gasPrice
+        to: response.tx.to,
+        data: response.tx.data,
+        value: response.tx.value || '0',
+        gas: response.tx.gas || '0',
+        gasPrice: response.tx.gasPrice || '0'
       };
     } catch (error) {
-      console.error('Error building swap transaction:', error);
+      console.error('❌ Error building swap transaction:', error);
       throw error;
     }
   }
