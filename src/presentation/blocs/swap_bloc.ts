@@ -33,13 +33,13 @@ export class SwapBloc {
   private needsApproval: boolean = false;
   private allowanceAmount: string = '0';
 
-  // DAI token info (default for swaps)
-  private readonly DAI_TOKEN: TokenInfo = {
-    address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
-    symbol: 'DAI',
-    name: 'Dai Stablecoin',
+  // USDT token info (default for swaps)
+  private readonly USDT_TOKEN: TokenInfo = {
+    address: '0x55d398326f99059fF775485246999027B3197955',
+    symbol: 'USDT',
+    name: 'Tether USD (BSC)',
     decimals: 18,
-    logoURI: 'https://tokens.1inch.io/0x6b175474e89094c44da98b954eedeac495271d0f.png',
+    logoURI: 'https://tokens.1inch.io/0x55d398326f99059ff775485246999027b3197955.png',
   };
   
   // 1inch router address for BSC
@@ -267,11 +267,11 @@ export class SwapBloc {
     
     // Reset tokens based on swap type
     if (event.swapType === SwapType.BUY) {
-      this.fromToken = this.DAI_TOKEN;
+      this.fromToken = this.USDT_TOKEN;
       this.toToken = null;
     } else {
       this.fromToken = null;
-      this.toToken = this.DAI_TOKEN;
+      this.toToken = this.USDT_TOKEN;
     }
     
     this.fromAmount = '';
@@ -412,12 +412,19 @@ export class SwapBloc {
         this.ROUTER_ADDRESS
       );
       
-      // So sánh với số lượng cần swap
-      this.needsApproval = parseFloat(this.allowanceAmount) < parseFloat(amount);
+      // Convert amount to wei để so sánh đúng format
+      const amountInWei = (parseFloat(amount) * Math.pow(10, 18)).toString();
+      
+      // So sánh allowance (wei) với amount (wei)
+      const allowanceNum = parseFloat(this.allowanceAmount);
+      const amountNum = parseFloat(amountInWei);
+      this.needsApproval = allowanceNum < amountNum;
       
       console.log(`🔍 Token ${tokenAddress} allowance check:`, {
         allowance: this.allowanceAmount,
+        allowanceFormatted: (allowanceNum / Math.pow(10, 18)).toFixed(4),
         required: amount,
+        requiredWei: amountInWei,
         needsApproval: this.needsApproval
       });
       
@@ -445,8 +452,35 @@ export class SwapBloc {
   }
 
   private async handleApproveToken(event: ApproveTokenEvent): Promise<void> {
-    // Lấy thông tin token để approve
-    const token = this.supportedTokens.find(t => t.address.toLowerCase() === event.tokenAddress.toLowerCase());
+    // Lấy thông tin token để approve từ cả supportedTokens và Dashboard tokens
+    let token = this.supportedTokens.find(t => t.address.toLowerCase() === event.tokenAddress.toLowerCase());
+    
+    // Nếu không tìm thấy trong supportedTokens, thử tìm từ Dashboard (cho tab BÁN)
+    if (!token) {
+      try {
+        const globalTokenService = GlobalTokenService.getInstance();
+        const walletBalance = await globalTokenService.getWalletBalance();
+        if (walletBalance?.tokens) {
+          const dashboardToken = walletBalance.tokens.find(t => 
+            t.address.toLowerCase() === event.tokenAddress.toLowerCase()
+          );
+          if (dashboardToken) {
+            // Convert TokenEntity → TokenInfo format
+            token = {
+              address: dashboardToken.address,
+              symbol: dashboardToken.symbol,
+              name: dashboardToken.name,
+              decimals: dashboardToken.decimals,
+              logoURI: dashboardToken.logoUri,
+              balance: dashboardToken.balance
+            };
+          }
+        }
+      } catch (error) {
+        console.error('❌ Lỗi khi tìm token từ Dashboard:', error);
+      }
+    }
+    
     if (!token) {
       console.error('❌ Không tìm thấy token cần approve:', event.tokenAddress);
       return;
@@ -607,7 +641,7 @@ export class SwapBloc {
   private handleReset(): void {
     // Reset tất cả state về mặc định
     this.swapType = SwapType.BUY;
-    this.fromToken = this.DAI_TOKEN;
+    this.fromToken = this.USDT_TOKEN;
     this.toToken = null;
     this.fromAmount = '';
     this.toAmount = '';

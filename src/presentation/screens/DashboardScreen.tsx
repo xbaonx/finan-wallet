@@ -124,10 +124,16 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             ) : (
               <Text style={styles.tokenIconText}>{token.symbol.charAt(0)}</Text>
             )}
+            {/* Chain logo badge */}
+            {token.chainLogo && (
+              <Image source={{ uri: token.chainLogo }} style={styles.chainBadge} />
+            )}
           </View>
           <View style={styles.tokenInfo}>
             <Text style={styles.tokenName}>{token.name}</Text>
-            <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+            <Text style={styles.tokenSymbol}>
+              {token.symbol} {token.chainName && `• ${token.chainName}`}
+            </Text>
           </View>
         </View>
         <View style={styles.tokenRight}>
@@ -400,11 +406,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    position: 'relative',
   },
   tokenLogo: {
     width: 48,
     height: 48,
     borderRadius: 24,
+  },
+  chainBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   tokenIconText: {
     fontSize: 18,

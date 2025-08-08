@@ -8,10 +8,22 @@ export interface TokenEntity {
   chainId: number;
   decimals: number;
   isNative?: boolean; // true for ETH, false for ERC-20 tokens
+  chainLogo?: string; // Logo của chain (BSC, ETH)
+  chainName?: string; // Tên chain (BSC, ETH)
 }
 
 export interface WalletBalance {
-  address: string;
+  address?: string;
   totalBalanceUSD: number;
   tokens: TokenEntity[];
+  nativeToken?: {
+    symbol: string;
+    name: string;
+    balance: string;
+    balanceFormatted: string;
+    usdPrice: number;
+    usdValue: number;
+    logo: string;
+    decimals: number;
+  };
 }

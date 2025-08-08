@@ -10,9 +10,9 @@ export const API_CONFIG = {
     BASE_URL: 'https://deep-index.moralis.io/api/v2.2',
     ENDPOINTS: {
       NATIVE_BALANCE: '/wallets/{address}/balance',
-      TOKEN_BALANCES: '/{address}/erc20',
-      TOKEN_PRICES: '/erc20/{addresses}/prices',
-      ETH_PRICE: '/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price', // WETH as ETH price proxy
+      TOKEN_BALANCES: '/{address}/bep20?chain=bsc',
+      TOKEN_PRICES: '/erc20/{addresses}/prices?chain=bsc',
+      BNB_PRICE: '/erc20/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c/price?chain=bsc', // WBNB as BNB price proxy
     }
   },
   
@@ -26,6 +26,16 @@ export const API_CONFIG = {
       QUOTE: '/swap/v6.0/{chainId}/quote',
       SWAP: '/swap/v6.0/{chainId}/swap',
       APPROVE: '/swap/v6.0/{chainId}/approve/transaction'
+    }
+  },
+
+  // Binance API Configuration (for price data)
+  BINANCE: {
+    BASE_URL: 'https://api.binance.com/api/v3',
+    ENDPOINTS: {
+      PRICE: '/ticker/price',
+      PRICE_24HR: '/ticker/24hr',
+      PRICES_BATCH: '/ticker/price'
     }
   },
 
@@ -47,11 +57,11 @@ export const API_CONFIG = {
 // Common BEP-20 tokens to track on BSC
 export const COMMON_TOKENS = [
   {
-    address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', // DAI BSC
-    symbol: 'DAI',
-    name: 'Dai Stablecoin',
+    address: '0x55d398326f99059fF775485246999027B3197955', // USDT BSC
+    symbol: 'USDT', 
+    name: 'Tether USD',
     decimals: 18,
-    logoUri: 'https://tokens.1inch.io/0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3.png' // DAI BSC
+    logoUri: 'https://tokens.1inch.io/0x55d398326f99059ff775485246999027b3197955.png' // USDT BSC
   },
   {
     address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC BSC
@@ -61,11 +71,11 @@ export const COMMON_TOKENS = [
     logoUri: 'https://tokens.1inch.io/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d.png' // USDC BSC
   },
   {
-    address: '0x55d398326f99059fF775485246999027B3197955', // USDT BSC
-    symbol: 'USDT', 
-    name: 'Tether USD',
+    address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', // DAI BSC
+    symbol: 'DAI',
+    name: 'Dai Stablecoin',
     decimals: 18,
-    logoUri: 'https://tokens.1inch.io/0x55d398326f99059ff775485246999027b3197955.png' // USDT BSC
+    logoUri: 'https://tokens.1inch.io/0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3.png' // DAI BSC
   },
   {
     address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB

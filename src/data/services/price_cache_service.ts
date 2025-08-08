@@ -16,7 +16,7 @@ interface PriceBatchRequest {
 
 export class PriceCacheService {
   private cache = new Map<string, CachedPrice>();
-  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds - tăng để giảm API calls
+  private readonly CACHE_DURATION = 3 * 60 * 1000; // 3 minutes in milliseconds - giảm để cập nhật giá thường xuyên hơn
   private readonly MAX_BATCH_SIZE = 5; // Giảm batch size để tránh rate limit
 
   /**

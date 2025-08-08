@@ -3,7 +3,7 @@
 // Services
 import { CryptoService } from '../../data/services/crypto_service';
 import { SecureStorageService } from '../../data/services/secure_storage_service';
-import { MoralisApiService } from '../../data/services/moralis_api_service';
+
 import { OneInchApiService } from '../../data/services/oneinch_api_service';
 
 // Repositories
@@ -85,7 +85,7 @@ export class ServiceLocator {
     // Services
     container.register('CryptoService', () => new CryptoService());
     container.register('SecureStorageService', () => new SecureStorageService());
-    container.register('MoralisApiService', () => new MoralisApiService());
+
     container.register('OneInchApiService', () => new OneInchApiService()); // API key sẽ được lấy từ api_config
 
     // Repositories
@@ -94,13 +94,10 @@ export class ServiceLocator {
       container.get('SecureStorageService')
     ));
     
-    container.register('TokenRepository', () => new TokenRepositoryImpl(
-      container.get('MoralisApiService')
-    ));
+    container.register('TokenRepository', () => new TokenRepositoryImpl());
     
     container.register('SwapRepository', () => new SwapRepositoryImpl(
-      container.get('OneInchApiService'),
-      container.get('MoralisApiService')
+      container.get('OneInchApiService')
     ));
 
     // Use Cases

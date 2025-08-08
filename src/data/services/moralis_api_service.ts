@@ -82,9 +82,11 @@ export class MoralisApiService {
 
       let ethPrice = 2500; // Fallback price
       if (ethPriceResponse.ok) {
-        const ethPriceData: MoralisPriceResponse = await ethPriceResponse.json();
-        ethPrice = ethPriceData.usdPrice || 2500;
-        console.log('ETH price:', ethPrice);
+        const response = await ethPriceResponse.json();
+        if (response.usdPrice) {
+          ethPrice = response.usdPrice;
+          console.log('ETH price:', ethPrice);
+        }
       }
 
       // Process and format data
@@ -434,15 +436,15 @@ export class MoralisApiService {
   }
 
   /**
-   * Get ETH price in USD
+   * Get BNB price in USD
    */
-  async getETHPrice(): Promise<number> {
+  async getBNBPrice(): Promise<number> {
     try {
-      const ethPriceUrl = `${MORALIS_BASE_URL}/erc20/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/price?chain=bsc`;
-      requestLogger.logRequest(ethPriceUrl, 'getETHPrice');
+      const bnbPriceUrl = `${MORALIS_BASE_URL}/erc20/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c/price?chain=bsc`;
+      requestLogger.logRequest(bnbPriceUrl, 'getBNBPrice');
       
-      const ethPriceResponse = await fetch(
-        ethPriceUrl,
+      const bnbPriceResponse = await fetch(
+        bnbPriceUrl,
         {
           headers: {
             'X-API-Key': MORALIS_API_KEY,
@@ -451,15 +453,15 @@ export class MoralisApiService {
         }
       );
 
-      if (ethPriceResponse.ok) {
-        const ethPriceData: MoralisPriceResponse = await ethPriceResponse.json();
-        return ethPriceData.usdPrice || 2500;
+      if (bnbPriceResponse.ok) {
+        const bnbPriceData: MoralisPriceResponse = await bnbPriceResponse.json();
+        return bnbPriceData.usdPrice || 300; // BNB fallback price around $300
       } else {
-        return 2500;
+        return 300; // BNB fallback price
       }
     } catch (error) {
-      console.error('Error fetching ETH price:', error);
-      throw new Error('Không thể lấy giá ETH');
+      console.error('Error fetching BNB price:', error);
+      throw new Error('Không thể lấy giá BNB');
     }
   }
 

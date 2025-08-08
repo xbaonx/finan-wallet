@@ -251,15 +251,21 @@ export class OneInchApiService {
     }
   }
 
-  async buildApproveTransaction(tokenAddress: string, amount?: string): Promise<SwapTransaction> {
+  async buildApproveTransaction(
+    tokenAddress: string, 
+    spenderAddress: string, 
+    amount: string, 
+    ownerAddress: string
+  ): Promise<SwapTransaction> {
     try {
       console.log('🔐 Building approve transaction for token:', tokenAddress);
+      console.log('🔐 Spender:', spenderAddress, 'Amount:', amount, 'Owner:', ownerAddress);
       
       const params: any = {
         tokenAddress
       };
       
-      // If amount is specified, use it; otherwise approve infinite
+      // Use the amount parameter (should be max uint256 for infinite approval)
       if (amount) {
         params.amount = amount;
       }
@@ -269,12 +275,17 @@ export class OneInchApiService {
       const response = await this.makeRequest(endpoint, params);
       console.log('✅ Approve transaction built successfully');
       
+      // Tăng gas tip cap cho BSC (tối thiểu 100000000 wei) để đảm bảo transaction không bị reject
+      // Lưu ý: gasPrice trong tx là max fee per gas
+      const recommendedGasTipCap = '150000000'; // 150 Gwei gas tip cap cho BSC
+      console.log(`⛽ Thiết lập gas tip cap là ${recommendedGasTipCap} cho transaction approve trên BSC`);
+      
       return {
         to: response.to,
         data: response.data,
         value: response.value || '0',
-        gas: response.gas,
-        gasPrice: response.gasPrice
+        gas: response.gas || '300000', // Đảm bảo gas limit đủ
+        gasPrice: recommendedGasTipCap // Gán gas tip cap cao hơn mức tối thiểu yêu cầu (100000000)
       };
     } catch (error) {
       console.error('❌ Error building approve transaction:', error);
@@ -347,12 +358,17 @@ export class OneInchApiService {
       console.log('✅ Standard swap transaction built successfully');
       console.log('🔥 Response debug:', JSON.stringify(response, null, 2));
       
+      // Tăng gas tip cap cho BSC (tối thiểu 100000000 wei) để đảm bảo transaction không bị reject
+      // Tương tự như đã làm với approve transaction
+      const recommendedGasTipCap = '150000000'; // 150 Gwei gas tip cap cho BSC
+      console.log(`⛽ Thiết lập gas tip cap là ${recommendedGasTipCap} cho transaction swap trên BSC`);
+      
       return {
         to: response.tx.to,
         data: response.tx.data,
         value: response.tx.value || '0',
-        gas: response.tx.gas || '0',
-        gasPrice: response.tx.gasPrice || '0'
+        gas: response.tx.gas || '600000', // Đảm bảo gas limit đủ cho swap (thường cao hơn approve)
+        gasPrice: recommendedGasTipCap // Gán gas tip cap cao hơn mức tối thiểu yêu cầu (100000000)
       };
     } catch (error) {
       console.error('❌ Error building swap transaction:', error);
