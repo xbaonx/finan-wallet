@@ -8,6 +8,8 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../core/theme';
@@ -15,6 +17,7 @@ import { DashboardBloc } from '../blocs/dashboard_bloc';
 import { LoadDashboardEvent } from '../blocs/dashboard_event';
 import { DashboardState, DashboardLoading, DashboardLoaded, DashboardError } from '../blocs/dashboard_state';
 import { ServiceLocator } from '../../core/di/service_locator';
+import { VietnamBankingService, BankInfo, VIETNAM_BANKS } from '../../data/services/vietnam_banking_service';
 
 export const DepositWithdrawScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -27,6 +30,18 @@ export const DepositWithdrawScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [balance, setBalance] = useState<any>(null);
   const [dashboardBloc, setDashboardBloc] = useState<DashboardBloc | null>(null);
+
+  // Vietnam Banking states
+  const [selectedBank, setSelectedBank] = useState<BankInfo | null>(null);
+  const [exchangeRate, setExchangeRate] = useState(24500);
+  const [vndAmount, setVndAmount] = useState(0);
+  const [transactionId, setTransactionId] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [showBankSelection, setShowBankSelection] = useState(false);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+
+  // Vietnam Banking Service
+  const bankingService = VietnamBankingService.getInstance();
 
   // Initialize DashboardBloc
   useEffect(() => {
@@ -121,12 +136,78 @@ export const DepositWithdrawScreen: React.FC = () => {
     icon: '💵'
   };
 
+  // Load exchange rate khi component mount
+  useEffect(() => {
+    loadExchangeRate();
+  }, []);
+
+  // Update VND amount khi USDT amount thay đổi
+  useEffect(() => {
+    if (amount && !isNaN(parseFloat(amount))) {
+      const usdtAmount = parseFloat(amount);
+      const calculatedVND = bankingService.calculateVNDAmount(usdtAmount);
+      setVndAmount(calculatedVND);
+    } else {
+      setVndAmount(0);
+    }
+  }, [amount, exchangeRate]);
+
+  const loadExchangeRate = async () => {
+    try {
+      const rate = await bankingService.getExchangeRate();
+      setExchangeRate(rate);
+      console.log('💱 Tỷ giá USD/VND:', rate);
+    } catch (error) {
+      console.error('❌ Lỗi load tỷ giá:', error);
+    }
+  };
+
   const handleDeposit = () => {
-    Alert.alert(
-      'Nạp tiền',
-      `Tính năng nạp ${amount} ${selectedToken} sẽ được phát triển trong phiên bản tiếp theo.`,
-      [{ text: 'Đóng' }]
-    );
+    if (!amount || parseFloat(amount) <= 0) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số lượng USDT hợp lệ');
+      return;
+    }
+
+    setShowBankSelection(true);
+  };
+
+  const handleBankSelection = (bank: BankInfo) => {
+    setSelectedBank(bank);
+    setShowBankSelection(false);
+    
+    // Tạo transaction ID và QR code
+    const txId = bankingService.generateTransactionId();
+    setTransactionId(txId);
+    
+    const content = bankingService.generateTransferContent(txId, parseFloat(amount));
+    const qrUrl = bankingService.generateVietQRCode(bank, vndAmount, content);
+    setQrCodeUrl(qrUrl);
+    
+    setShowPaymentDetails(true);
+  };
+
+  const handleOpenBankingApp = async () => {
+    if (!selectedBank) return;
+    
+    const content = bankingService.generateTransferContent(transactionId, parseFloat(amount));
+    const success = await bankingService.openBankingApp(selectedBank, vndAmount, content);
+    
+    if (success) {
+      Alert.alert(
+        'Thành công',
+        'Đã mở ứng dụng ngân hàng. Vui lòng hoàn tất giao dịch chuyển khoản.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleCopyAccountInfo = () => {
+    if (!selectedBank) return;
+    
+    const accountInfo = `${selectedBank.shortName}\nSTK: ${selectedBank.accountNumber}\nTên: ${selectedBank.accountName}\nSố tiền: ${vndAmount.toLocaleString('vi-VN')} VND\nNội dung: ${bankingService.generateTransferContent(transactionId, parseFloat(amount))}`;
+    
+    Clipboard.setString(accountInfo);
+    Alert.alert('Thành công', 'Đã sao chép thông tin tài khoản');
   };
 
   const handleWithdraw = () => {
@@ -272,6 +353,167 @@ export const DepositWithdrawScreen: React.FC = () => {
       color: '#0369a1',
       lineHeight: 18,
     },
+    // Vietnam Banking styles
+    exchangeRateCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: '#e5e7eb',
+    },
+    exchangeRateText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    vndAmountText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#059669',
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    bankSelectionModal: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    },
+    bankSelectionContent: {
+      backgroundColor: colors.background,
+      borderRadius: 16,
+      padding: 20,
+      margin: 20,
+      maxHeight: '80%',
+    },
+    bankSelectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    bankItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    bankLogo: {
+      fontSize: 24,
+      marginRight: 12,
+    },
+    bankInfo: {
+      flex: 1,
+    },
+    bankName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    bankAccount: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    paymentDetailsModal: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.background,
+      zIndex: 1000,
+    },
+    paymentHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    paymentTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    closeButton: {
+      padding: 8,
+    },
+    closeButtonText: {
+      fontSize: 16,
+      color: '#3b82f6',
+    },
+    paymentContent: {
+      flex: 1,
+      padding: 20,
+    },
+    qrCodeContainer: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    qrCodeImage: {
+      width: 200,
+      height: 200,
+      borderRadius: 12,
+    },
+    paymentInfoCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+    },
+    paymentInfoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    paymentInfoLabel: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    paymentInfoValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      flex: 1,
+      textAlign: 'right',
+    },
+    actionButtonsContainer: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 20,
+    },
+    actionButton: {
+      flex: 1,
+      backgroundColor: '#3b82f6',
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+    },
+    secondaryActionButton: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    actionButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: 'white',
+    },
+    secondaryActionButtonText: {
+      color: colors.text,
+    },
   });
 
   return (
@@ -341,6 +583,18 @@ export const DepositWithdrawScreen: React.FC = () => {
             />
           </View>
 
+          {/* Exchange Rate Card - chỉ hiển thị khi nạp tiền */}
+          {activeTab === 'deposit' && amount && parseFloat(amount) > 0 && (
+            <View style={styles.exchangeRateCard}>
+              <Text style={styles.exchangeRateText}>
+                Tỷ giá: 1 USDT = {exchangeRate.toLocaleString('vi-VN')} VND
+              </Text>
+              <Text style={styles.vndAmountText}>
+                ≈ {vndAmount.toLocaleString('vi-VN')} VND
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity
             style={styles.button}
             onPress={activeTab === 'deposit' ? handleDeposit : handleWithdraw}
@@ -364,6 +618,130 @@ export const DepositWithdrawScreen: React.FC = () => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Bank Selection Modal */}
+      {showBankSelection && (
+        <View style={styles.bankSelectionModal}>
+          <View style={styles.bankSelectionContent}>
+            <Text style={styles.bankSelectionTitle}>Chọn ngân hàng</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {VIETNAM_BANKS.map((bank) => (
+                <TouchableOpacity
+                  key={bank.id}
+                  style={styles.bankItem}
+                  onPress={() => handleBankSelection(bank)}
+                >
+                  <Text style={styles.bankLogo}>{bank.logo}</Text>
+                  <View style={styles.bankInfo}>
+                    <Text style={styles.bankName}>{bank.shortName}</Text>
+                    <Text style={styles.bankAccount}>STK: {bank.accountNumber}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.secondaryActionButton]}
+              onPress={() => setShowBankSelection(false)}
+            >
+              <Text style={[styles.actionButtonText, styles.secondaryActionButtonText]}>
+                Hủy
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Payment Details Modal */}
+      {showPaymentDetails && selectedBank && (
+        <View style={styles.paymentDetailsModal}>
+          <View style={styles.paymentHeader}>
+            <Text style={styles.paymentTitle}>Thông tin chuyển khoản</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowPaymentDetails(false)}
+            >
+              <Text style={styles.closeButtonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.paymentContent} showsVerticalScrollIndicator={false}>
+            {/* QR Code */}
+            <View style={styles.qrCodeContainer}>
+              <Image
+                source={{ uri: qrCodeUrl }}
+                style={styles.qrCodeImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.exchangeRateText}>
+                Quét mã QR để chuyển khoản
+              </Text>
+            </View>
+
+            {/* Payment Information */}
+            <View style={styles.paymentInfoCard}>
+              <View style={styles.paymentInfoRow}>
+                <Text style={styles.paymentInfoLabel}>Ngân hàng:</Text>
+                <Text style={styles.paymentInfoValue}>{selectedBank.shortName}</Text>
+              </View>
+              <View style={styles.paymentInfoRow}>
+                <Text style={styles.paymentInfoLabel}>Số tài khoản:</Text>
+                <Text style={styles.paymentInfoValue}>{selectedBank.accountNumber}</Text>
+              </View>
+              <View style={styles.paymentInfoRow}>
+                <Text style={styles.paymentInfoLabel}>Tên tài khoản:</Text>
+                <Text style={styles.paymentInfoValue}>{selectedBank.accountName}</Text>
+              </View>
+              <View style={styles.paymentInfoRow}>
+                <Text style={styles.paymentInfoLabel}>Số tiền:</Text>
+                <Text style={[styles.paymentInfoValue, { color: '#059669', fontWeight: 'bold' }]}>
+                  {vndAmount.toLocaleString('vi-VN')} VND
+                </Text>
+              </View>
+              <View style={styles.paymentInfoRow}>
+                <Text style={styles.paymentInfoLabel}>Nội dung:</Text>
+                <Text style={styles.paymentInfoValue}>
+                  {bankingService.generateTransferContent(transactionId, parseFloat(amount))}
+                </Text>
+              </View>
+              <View style={styles.paymentInfoRow}>
+                <Text style={styles.paymentInfoLabel}>Mã giao dịch:</Text>
+                <Text style={styles.paymentInfoValue}>{transactionId}</Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleOpenBankingApp}
+              >
+                <Text style={styles.actionButtonText}>
+                  🏦 Mở app {selectedBank.shortName}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.secondaryActionButton]}
+                onPress={handleCopyAccountInfo}
+              >
+                <Text style={[styles.actionButtonText, styles.secondaryActionButtonText]}>
+                  📋 Sao chép thông tin
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Instructions */}
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>📝 Hướng dẫn chuyển khoản</Text>
+              <Text style={styles.infoText}>
+                1. Quét mã QR hoặc mở app ngân hàng{'\n'}
+                2. Chuyển khoản đúng số tiền và nội dung{'\n'}
+                3. USDT sẽ được nạp vào ví sau 5-10 phút{'\n'}
+                4. Liên hệ hỗ trợ nếu có vấn đề
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
