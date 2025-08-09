@@ -117,32 +117,100 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     const tokenValue = parseFloat(token.balance) * token.priceUSD;
     
     return (
-      <View key={`${token.address}-${index}`} style={[styles.tokenItem, { backgroundColor: colors.card }]}>
-        <View style={styles.tokenLeft}>
-          <View style={[styles.tokenIcon, { backgroundColor: colors.surfaceSecondary }]}>
+      <View key={`${token.address}-${index}`} style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        backgroundColor: colors.background,
+      }}>
+        {/* Token Info */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <View style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: colors.surfaceSecondary,
+            marginRight: 12,
+            justifyContent: 'center',
+            alignItems: 'center',
+            position: 'relative',
+          }}>
             {token.logoUri ? (
-              <Image source={{ uri: token.logoUri }} style={styles.tokenLogo} />
+              <Image 
+                source={{ uri: token.logoUri }} 
+                style={{ width: 32, height: 32, borderRadius: 16 }}
+                onError={() => {}}
+              />
             ) : (
-              <Text style={[styles.tokenIconText, { color: colors.text }]}>{token.symbol.charAt(0)}</Text>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.textSecondary }}>
+                {token.symbol.charAt(0)}
+              </Text>
             )}
-            {/* Chain logo badge */}
+            
+            {/* Chain Logo Badge */}
             {token.chainLogo && (
-              <Image source={{ uri: token.chainLogo }} style={styles.chainBadge} />
+              <View style={{
+                position: 'absolute',
+                bottom: -2,
+                right: -2,
+                width: 16,
+                height: 16,
+                borderRadius: 8,
+                backgroundColor: colors.background,
+                borderWidth: 1,
+                borderColor: colors.border,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+                <Image 
+                  source={{ uri: token.chainLogo }} 
+                  style={{ width: 12, height: 12, borderRadius: 6 }}
+                  onError={() => {}}
+                />
+              </View>
             )}
           </View>
-          <View style={styles.tokenInfo}>
-            <Text style={[styles.tokenName, { color: colors.text }]}>{token.name}</Text>
-            <Text style={[styles.tokenSymbol, { color: colors.textSecondary }]}>
-              {token.symbol} {token.chainName && `• ${token.chainName}`}
+          
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: colors.text,
+              marginBottom: 2,
+            }}>
+              {token.symbol}
             </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{
+                fontSize: 14,
+                color: colors.textSecondary,
+              }}>
+                {token.name}
+              </Text>
+              {token.balance && parseFloat(token.balance) > 0 && (
+                <Text style={{
+                  fontSize: 14,
+                  color: '#047857',
+                  fontWeight: '500',
+                  marginLeft: 8,
+                }}>
+                  {formatTokenBalance(token.balance, token.symbol)} {token.symbol}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
-        <View style={styles.tokenRight}>
-          <Text style={[styles.tokenBalance, { color: colors.text }]}>
-            {formatTokenBalance(token.balance, token.symbol)} {token.symbol}
-          </Text>
-          <Text style={[styles.tokenValue, { color: colors.text }]}>
-            {token.priceUSD > 0 ? formatCurrency(tokenValue) : 'Không xác định'}
+
+        {/* Price Info */}
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.text,
+          }}>
+            {token.priceUSD > 0 ? formatCurrency(tokenValue) : 'N/A'}
           </Text>
         </View>
       </View>
