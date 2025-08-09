@@ -316,19 +316,27 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Token List Header */}
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.background }}>
+      </ScrollView>
+
+      {/* Token List Header + FlatList */}
+      <View style={{ flex: 1 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: 8, backgroundColor: colors.background }}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Tài sản</Text>
         </View>
-
-        {/* Token List */}
+        
         {balance && balance.tokens.length > 0 ? (
-          balance.tokens.map((token: TokenEntity, index: number) => 
-            renderTokenItem(token, index)
-          )
+          <FlatList
+            data={balance.tokens}
+            renderItem={({ item, index }: { item: TokenEntity, index: number }) => renderTokenItem(item, index)}
+            keyExtractor={(item: TokenEntity, index: number) => `${item.address}-${index}`}
+            showsVerticalScrollIndicator={false}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          />
         ) : (
           <View style={{
-            paddingVertical: 32,
+            flex: 1,
+            justifyContent: 'center',
             alignItems: 'center',
             paddingHorizontal: 32,
           }}>
@@ -341,7 +349,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -435,7 +443,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 4,
   },
   actionButton: {
     alignItems: 'center',
