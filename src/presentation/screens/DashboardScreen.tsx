@@ -250,7 +250,8 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.scrollView}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{ paddingBottom: 0 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -318,9 +319,9 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
       </ScrollView>
 
-      {/* Token List Header + FlatList */}
+      {/* Token List Header + FlatList - No gap */}
       <View style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: 8 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: 0 }}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Tài sản</Text>
         </View>
         
