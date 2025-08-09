@@ -361,43 +361,45 @@ const SwapModal: React.FC<SwapModalProps> = ({
       onRequestClose={onClose}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-        <View style={{ flex: 1 }}>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <View style={{ flex: 1 }}>
 
-          {/* Header */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: '#f3f4f6',
-          }}>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={{ fontSize: 16, color: '#6b7280' }}>Hủy</Text>
-            </TouchableOpacity>
-            <Text style={{
-              fontSize: 18,
-              fontWeight: 'bold',
-              color: '#111827',
+            {/* Header */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: '#f3f4f6',
             }}>
-              {getTitle()}
-            </Text>
-            <View style={{ width: 40 }} />
-          </View>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={{ fontSize: 16, color: '#6b7280' }}>Hủy</Text>
+              </TouchableOpacity>
+              <Text style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: '#111827',
+              }}>
+                {getTitle()}
+              </Text>
+              <View style={{ width: 40 }} />
+            </View>
 
-          {/* Scrollable Content */}
-          <ScrollView 
-            style={{ 
-              flex: 1,
-              marginBottom: keyboardHeight > 0 ? (Platform.OS === 'ios' ? keyboardHeight - insets.bottom + 80 : 80) : 80
-            }}
-            contentContainerStyle={{ 
-              paddingHorizontal: 16, 
-              paddingBottom: 20
-            }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+            {/* Scrollable Content */}
+            <ScrollView 
+              style={{ flex: 1 }}
+              contentContainerStyle={{ 
+                paddingHorizontal: 16, 
+                paddingBottom: 100
+              }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
           >
             {/* Token Info */}
             {token && (
@@ -913,6 +915,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
             )}
           </View>
         </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
