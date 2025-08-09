@@ -250,7 +250,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={[styles.scrollView, { backgroundColor: colors.background }]}
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
