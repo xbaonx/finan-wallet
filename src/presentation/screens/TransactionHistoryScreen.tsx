@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeColors } from '../../core/theme';
 import { TransactionHistoryBloc } from '../blocs/transaction_history_bloc';
 import { TransactionHistoryState, TransactionHistoryLoading, TransactionHistoryLoaded, TransactionHistoryEmpty, TransactionHistoryError } from '../blocs/transaction_history_state';
 import { LoadTransactionHistory, RefreshTransactionHistory, LoadMoreTransactions, FilterTransactionHistory } from '../blocs/transaction_history_event';
@@ -26,6 +27,7 @@ interface TransactionHistoryScreenProps {
 const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
   transactionHistoryBloc,
 }) => {
+  const colors = useThemeColors();
   const [state, setState] = useState<TransactionHistoryState>(transactionHistoryBloc.state);
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -251,9 +253,9 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
   );
 
   const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyStateTitle}>Chưa có giao dịch nào</Text>
-      <Text style={styles.emptyStateSubtitle}>
+    <View style={[styles.emptyState, { backgroundColor: colors.background }]}>
+      <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Chưa có giao dịch nào</Text>
+      <Text style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}>
         {currentFilter ? 'Không có giao dịch nào phù hợp với bộ lọc' : 'Bạn chưa thực hiện giao dịch nào'}
       </Text>
     </View>
@@ -272,9 +274,9 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
   const renderContent = () => {
     if (state instanceof TransactionHistoryLoading && !(state as TransactionHistoryLoading).isRefresh) {
       return (
-        <View style={styles.loadingState}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Đang tải lịch sử giao dịch...</Text>
+        <View style={[styles.loadingState, { backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Đang tải lịch sử giao dịch...</Text>
         </View>
       );
     }
@@ -297,7 +299,8 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
             <RefreshControl
               refreshing={state instanceof TransactionHistoryLoading && (state as TransactionHistoryLoading).isRefresh}
               onRefresh={handleRefresh}
-              colors={['#3B82F6']}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
           onEndReached={state.hasMore ? handleLoadMore : undefined}
@@ -305,7 +308,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
           ListFooterComponent={
             state.isLoadingMore ? (
               <View style={styles.loadMoreIndicator}>
-                <ActivityIndicator size="small" color="#3B82F6" />
+                <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : null
           }
@@ -318,24 +321,24 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Lịch sử giao dịch</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Lịch sử giao dịch</Text>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={[styles.filterButton, { backgroundColor: colors.primary }]}
           onPress={() => setShowFilterModal(true)}
         >
-          <Text style={styles.filterButtonText}>Lọc</Text>
+          <Text style={[styles.filterButtonText, { color: colors.textInverse }]}>Lọc</Text>
         </TouchableOpacity>
       </View>
       
       {currentFilter && (
-        <View style={styles.filterIndicator}>
-          <Text style={styles.filterIndicatorText}>
+        <View style={[styles.filterIndicator, { backgroundColor: colors.surfaceSecondary }]}>
+          <Text style={[styles.filterIndicatorText, { color: colors.text }]}>
             {strings.filtering} {currentFilter.type ? formatTransactionType(currentFilter.type) : strings.custom}
           </Text>
           <TouchableOpacity onPress={clearFilter}>
-            <Text style={styles.clearFilterText}>{strings.clearFilter}</Text>
+            <Text style={[styles.clearFilterText, { color: colors.primary }]}>{strings.clearFilter}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -349,7 +352,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    // backgroundColor được override bởi theme colors
   },
   header: {
     flexDirection: 'row',
@@ -357,23 +360,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    // backgroundColor và borderBottomColor được override bởi theme colors
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111827',
+    // color được override bởi theme colors
   },
   filterButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#3B82F6',
+    // backgroundColor được override bởi theme colors
     borderRadius: 6,
   },
   filterButtonText: {
-    color: '#FFFFFF',
+    // color được override bởi theme colors
     fontSize: 14,
     fontWeight: '500',
   },
@@ -383,17 +385,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#EFF6FF',
+    // backgroundColor và borderBottomColor được override bởi theme colors
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   filterIndicatorText: {
     fontSize: 14,
-    color: '#3B82F6',
+    // color được override bởi theme colors
   },
   clearFilterText: {
     fontSize: 14,
-    color: '#EF4444',
+    // color được override bởi theme colors
     fontWeight: '500',
   },
   listContainer: {
