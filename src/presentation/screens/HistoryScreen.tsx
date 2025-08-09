@@ -34,7 +34,7 @@ export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={[styles.featureItem, { color: colors.textSecondary }]}>• Trạng thái giao dịch real-time</Text>
           <Text style={[styles.featureItem, { color: colors.textSecondary }]}>• Xuất báo cáo giao dịch</Text>
         </View>
-        <Text style={[styles.comingSoon, { color: colors.primary }]}>Sắp ra mắt...</Text>
+        <Text style={[styles.comingSoon, { color: colors.primary, backgroundColor: colors.surfaceSecondary }]}>Sắp ra mắt...</Text>
       </View>
     </SafeAreaView>
   );
@@ -43,7 +43,7 @@ export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    // backgroundColor được override bởi theme colors
   },
   content: {
     flex: 1,
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#f3f4f6',
+    // backgroundColor được override bởi theme colors
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -66,13 +66,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    // color được override bởi theme colors
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    // color được override bởi theme colors
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -83,17 +83,17 @@ const styles = StyleSheet.create({
   },
   featureItem: {
     fontSize: 16,
-    color: '#374151',
+    // color được override bởi theme colors
     marginBottom: 8,
     lineHeight: 24,
   },
   comingSoon: {
     fontSize: 14,
-    color: '#f59e0b',
+    // color và backgroundColor được override bởi theme colors
     fontWeight: '600',
-    backgroundColor: '#fef3c7',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
+    textAlign: 'center',
   },
 });
