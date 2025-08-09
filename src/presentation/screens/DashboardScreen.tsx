@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
-  ActivityIndicator,
-  RefreshControl,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
+  RefreshControl,
+  StyleSheet,
+  FlatList,
   Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -315,20 +316,38 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Token List */}
-        <View style={styles.tokenSection}>
+        {/* Token List Header */}
+        <View style={{ paddingHorizontal: 16, paddingVertical: 16, backgroundColor: colors.background }}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Tài sản</Text>
-          {balance && balance.tokens.length > 0 ? (
-            balance.tokens.map((token: TokenEntity, index: number) => 
-              renderTokenItem(token, index)
-            )
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>Không có token nào</Text>
-            </View>
-          )}
         </View>
       </ScrollView>
+
+      {/* Token List - Separate FlatList for better spacing */}
+      {balance && balance.tokens.length > 0 ? (
+        <FlatList
+          data={balance.tokens}
+          renderItem={({ item, index }: { item: TokenEntity, index: number }) => renderTokenItem(item, index)}
+          keyExtractor={(item: TokenEntity, index: number) => `${item.address}-${index}`}
+          showsVerticalScrollIndicator={false}
+          style={{ flex: 1, marginBottom: -88 }}
+          contentContainerStyle={{ paddingBottom: 88 }}
+        />
+      ) : (
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 32,
+        }}>
+          <Text style={{
+            fontSize: 16,
+            color: colors.textSecondary,
+            textAlign: 'center',
+          }}>
+            Không có token nào
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
