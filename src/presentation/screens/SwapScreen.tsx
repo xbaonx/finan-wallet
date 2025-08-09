@@ -157,7 +157,7 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
           <Text style={{
             fontSize: 16,
             fontWeight: '600',
-            color: '#111827',
+            color: colors.text,
           }}>
             {formatPrice(tokenPrices.get(token.symbol) || token.priceUSD)}
           </Text>

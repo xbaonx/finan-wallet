@@ -141,7 +141,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={[styles.tokenBalance, { color: colors.text }]}>
             {formatTokenBalance(token.balance, token.symbol)} {token.symbol}
           </Text>
-          <Text style={[styles.tokenValue, { color: colors.textSecondary }]}>
+          <Text style={[styles.tokenValue, { color: colors.text }]}>
             {token.priceUSD > 0 ? formatCurrency(tokenValue) : 'Không xác định'}
           </Text>
         </View>

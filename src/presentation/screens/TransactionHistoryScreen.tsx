@@ -157,7 +157,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
     
     return (
       <TouchableOpacity
-        style={styles.transactionItem}
+        style={[styles.transactionItem, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
         onPress={() => {
           // Navigate to transaction detail screen
           // This would be implemented with navigation
@@ -177,7 +177,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
       
       <View style={styles.transactionInfo}>
         <View style={styles.transactionHeader}>
-          <Text style={styles.transactionType}>
+          <Text style={[styles.transactionType, { color: colors.text }]}>
             {formatTransactionType(item.type)} {item.tokenSymbol}
           </Text>
           <Text style={[styles.amount, { color: item.type === TransactionType.RECEIVE ? '#10B981' : '#EF4444' }]}>
@@ -186,7 +186,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
         </View>
         
         <View style={styles.transactionDetails}>
-          <Text style={styles.timestamp}>{formatDate(item.timestamp)}</Text>
+          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{formatDate(item.timestamp)}</Text>
           <View style={styles.statusContainer}>
             <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
             <Text style={[styles.status, { color: getStatusColor(item.status) }]}>
@@ -196,7 +196,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
         </View>
         
         {item.amountUSD && (
-          <Text style={styles.usdAmount}>≈ ${item.amountUSD.toFixed(2)}</Text>
+          <Text style={[styles.usdAmount, { color: colors.text }]}>≈ ${item.amountUSD.toFixed(2)}</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -405,18 +405,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 4,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    // backgroundColor và borderBottomColor được override bởi theme colors
+    borderBottomWidth: 1,
   },
   transactionIcon: {
     width: 40,
@@ -443,8 +433,9 @@ const styles = StyleSheet.create({
   },
   transactionType: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
+    fontWeight: '600',
+    // color được override bởi theme colors
+    marginBottom: 4,
   },
   amount: {
     fontSize: 16,
@@ -458,7 +449,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 12,
-    color: '#6B7280',
+    // color được override bởi theme colors
   },
   statusContainer: {
     flexDirection: 'row',
@@ -476,7 +467,7 @@ const styles = StyleSheet.create({
   },
   usdAmount: {
     fontSize: 12,
-    color: '#6B7280',
+    // color được override bởi theme colors
   },
   loadingState: {
     flex: 1,
