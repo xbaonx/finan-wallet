@@ -360,46 +360,44 @@ const SwapModal: React.FC<SwapModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-        <KeyboardAvoidingView 
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
+      <SafeAreaView style={{ 
+        flex: 1, 
+        backgroundColor: 'white'
+      }}>
           <View style={{ flex: 1 }}>
 
-            {/* Header */}
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: '#f3f4f6',
+          {/* Header */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: '#f3f4f6',
+          }}>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={{ fontSize: 16, color: '#6b7280' }}>Hủy</Text>
+            </TouchableOpacity>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              color: '#111827',
             }}>
-              <TouchableOpacity onPress={onClose}>
-                <Text style={{ fontSize: 16, color: '#6b7280' }}>Hủy</Text>
-              </TouchableOpacity>
-              <Text style={{
-                fontSize: 18,
-                fontWeight: 'bold',
-                color: '#111827',
-              }}>
-                {getTitle()}
-              </Text>
-              <View style={{ width: 40 }} />
-            </View>
+              {getTitle()}
+            </Text>
+            <View style={{ width: 40 }} />
+          </View>
 
-            {/* Scrollable Content */}
-            <ScrollView 
-              style={{ flex: 1 }}
-              contentContainerStyle={{ 
-                paddingHorizontal: 16, 
-                paddingBottom: 100
-              }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+          {/* Scrollable Content */}
+          <ScrollView 
+            style={{ flex: 1 }}
+            contentContainerStyle={{ 
+              paddingHorizontal: 16, 
+              paddingBottom: keyboardHeight > 0 ? keyboardHeight + 50 : 100
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             {/* Token Info */}
             {token && (
@@ -714,122 +712,18 @@ const SwapModal: React.FC<SwapModalProps> = ({
             ) : null}
           </ScrollView>
 
-          {/* Fixed Confirm Button */}
+          {/* Fixed Action Button - Clean design */}
           <View style={{
             position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: 16,
-            paddingBottom: Math.max(insets.bottom, 16),
+            bottom: keyboardHeight > 0 ? 
+              (Platform.OS === 'ios' ? keyboardHeight - insets.bottom + 10 : 10) : 
+              insets.bottom + 20,
+            left: 16,
+            right: 16,
             backgroundColor: 'white',
-            borderTopWidth: 1,
-            borderTopColor: '#f3f4f6',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 5,
-            transform: keyboardHeight > 0 ? [{ translateY: -keyboardHeight }] : []
+            paddingTop: 16,
+            paddingBottom: 16,
           }}>
-            {/* Hiển thị progress steps */}
-            {needsApproval && amount && quote && (
-              <View style={{
-                backgroundColor: '#f0f9ff',
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 16,
-              }}>
-                <Text style={{
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color: '#0369a1',
-                  marginBottom: 12,
-                }}>
-                  Quy trình mua {getToToken()}
-                </Text>
-                
-                {/* Step 1: Approve */}
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginBottom: 8,
-                }}>
-                  <View style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    backgroundColor: approvingToken ? '#3b82f6' : 
-                                   loading ? '#10b981' : '#e5e7eb',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                  }}>
-                    {approvingToken ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : loading ? (
-                      <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>✓</Text>
-                    ) : (
-                      <Text style={{ color: '#9ca3af', fontSize: 12, fontWeight: 'bold' }}>1</Text>
-                    )}
-                  </View>
-                  <Text style={{
-                    fontSize: 14,
-                    color: approvingToken ? '#3b82f6' : 
-                           loading ? '#10b981' : '#6b7280',
-                    fontWeight: approvingToken ? '600' : '400',
-                  }}>
-                    Cấp quyền sử dụng {getFromToken()}
-                  </Text>
-                </View>
-                
-                {/* Step 2: Swap */}
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}>
-                  <View style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    backgroundColor: loading ? '#3b82f6' : '#e5e7eb',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                  }}>
-                    {loading ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <Text style={{ color: '#9ca3af', fontSize: 12, fontWeight: 'bold' }}>2</Text>
-                    )}
-                  </View>
-                  <Text style={{
-                    fontSize: 14,
-                    color: loading ? '#3b82f6' : '#6b7280',
-                    fontWeight: loading ? '600' : '400',
-                  }}>
-                    Thực hiện giao dịch {swapType === SwapType.BUY ? 'mua' : 'bán'}
-                  </Text>
-                </View>
-                
-                {/* Thông tin bổ sung nếu cần */}
-                <View style={{
-                  marginTop: 12,
-                  paddingTop: 12,
-                  borderTopWidth: 1,
-                  borderTopColor: '#e0f2fe',
-                }}>
-                  <Text style={{
-                    fontSize: 12,
-                    color: '#0369a1',
-                  }}>
-                    Giao dịch sẽ được thực hiện qua 1inch DEX
-                  </Text>
-                </View>
-              </View>
-            )}
-            
-            {/* Nút thực hiện giao dịch */}
             {needsApproval && amount && quote ? (
               <TouchableOpacity
                 style={{
@@ -915,7 +809,6 @@ const SwapModal: React.FC<SwapModalProps> = ({
             )}
           </View>
         </View>
-        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
