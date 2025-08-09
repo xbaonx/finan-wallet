@@ -1401,7 +1401,6 @@ export const SwapScreen: React.FC = () => {
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
-        paddingTop: Math.max(insets.top + 16, 32),
       }}>
         <Text style={{
           fontSize: 20,

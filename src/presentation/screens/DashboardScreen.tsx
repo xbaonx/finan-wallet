@@ -262,7 +262,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         }
       >
         {/* Header */}
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.header}>
           <Text style={[styles.greeting, { color: colors.text }]}>Xin chào!</Text>
           <Text style={[styles.walletAddress, { color: colors.textSecondary }]}>
             {wallet ? truncateAddress(wallet.address) : 'Đang tải...'}
