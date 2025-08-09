@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
-  RefreshControl,
   ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
   Image,
   Alert,
 } from 'react-native';
-import { SafeAreaView as RNSafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useThemeColors } from '../../core/theme';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -35,6 +35,7 @@ interface Props {
 
 export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [wallet, setWallet] = useState<any>(null);
@@ -116,13 +117,13 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     const tokenValue = parseFloat(token.balance) * token.priceUSD;
     
     return (
-      <View key={`${token.address}-${index}`} style={styles.tokenItem}>
+      <View key={`${token.address}-${index}`} style={[styles.tokenItem, { backgroundColor: colors.card }]}>
         <View style={styles.tokenLeft}>
-          <View style={styles.tokenIcon}>
+          <View style={[styles.tokenIcon, { backgroundColor: colors.surfaceSecondary }]}>
             {token.logoUri ? (
               <Image source={{ uri: token.logoUri }} style={styles.tokenLogo} />
             ) : (
-              <Text style={styles.tokenIconText}>{token.symbol.charAt(0)}</Text>
+              <Text style={[styles.tokenIconText, { color: colors.text }]}>{token.symbol.charAt(0)}</Text>
             )}
             {/* Chain logo badge */}
             {token.chainLogo && (
@@ -130,17 +131,17 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             )}
           </View>
           <View style={styles.tokenInfo}>
-            <Text style={styles.tokenName}>{token.name}</Text>
-            <Text style={styles.tokenSymbol}>
+            <Text style={[styles.tokenName, { color: colors.text }]}>{token.name}</Text>
+            <Text style={[styles.tokenSymbol, { color: colors.textSecondary }]}>
               {token.symbol} {token.chainName && `• ${token.chainName}`}
             </Text>
           </View>
         </View>
         <View style={styles.tokenRight}>
-          <Text style={styles.tokenBalance}>
+          <Text style={[styles.tokenBalance, { color: colors.text }]}>
             {formatTokenBalance(token.balance, token.symbol)} {token.symbol}
           </Text>
-          <Text style={styles.tokenValue}>
+          <Text style={[styles.tokenValue, { color: colors.textSecondary }]}>
             {token.priceUSD > 0 ? formatCurrency(tokenValue) : 'Không xác định'}
           </Text>
         </View>
@@ -150,10 +151,10 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   if (isLoading && !wallet) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Đang tải dữ liệu ví...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Đang tải dữ liệu ví...</Text>
         </View>
       </SafeAreaView>
     );
@@ -161,16 +162,16 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   if (error && !wallet) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Có lỗi xảy ra</Text>
-          <Text style={styles.errorMessage}>{error}</Text>
+          <Text style={[styles.errorTitle, { color: colors.text }]}>Có lỗi xảy ra</Text>
+          <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>{error}</Text>
           <TouchableOpacity
-            style={styles.retryButton}
+            style={[styles.retryButton, { backgroundColor: colors.primary }]}
             onPress={() => dashboardBloc?.add(new LoadDashboardEvent())}
             activeOpacity={0.8}
           >
-            <Text style={styles.retryButtonText}>Thử lại</Text>
+            <Text style={[styles.retryButtonText, { color: colors.textInverse }]}>Thử lại</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -178,34 +179,34 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            colors={['#3b82f6']}
-            tintColor="#3b82f6"
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
         {/* Header */}
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-          <Text style={styles.greeting}>Xin chào!</Text>
-          <Text style={styles.walletAddress}>
+          <Text style={[styles.greeting, { color: colors.text }]}>Xin chào!</Text>
+          <Text style={[styles.walletAddress, { color: colors.textSecondary }]}>
             {wallet ? truncateAddress(wallet.address) : 'Đang tải...'}
           </Text>
         </View>
 
         {/* Total Balance */}
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Tổng số dư</Text>
-          <Text style={styles.balanceAmount}>
+        <View style={[styles.balanceCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Tổng số dư</Text>
+          <Text style={[styles.balanceAmount, { color: colors.text }]}>
             {balance ? formatCurrency(balance.totalBalanceUSD) : '$0.00'}
           </Text>
-          <Text style={styles.balanceSubtext}>
+          <Text style={[styles.balanceSubtext, { color: colors.textTertiary }]}>
             {balance ? `${balance.tokens.length} token` : '0 token'}
           </Text>
         </View>
@@ -213,49 +214,49 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: colors.card }]}
             onPress={handleSend}
             activeOpacity={0.8}
           >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>↑</Text>
+            <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.actionIconText, { color: colors.textInverse }]}>↑</Text>
             </View>
-            <Text style={styles.actionText}>Gửi</Text>
+            <Text style={[styles.actionText, { color: colors.text }]}>Gửi</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: colors.card }]}
             onPress={handleReceive}
             activeOpacity={0.8}
           >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>↓</Text>
+            <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.actionIconText, { color: colors.textInverse }]}>↓</Text>
             </View>
-            <Text style={styles.actionText}>Nhận</Text>
+            <Text style={[styles.actionText, { color: colors.text }]}>Nhận</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: colors.card }]}
             onPress={handleSwap}
             activeOpacity={0.8}
           >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>⇄</Text>
+            <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.actionIconText, { color: colors.textInverse }]}>⇄</Text>
             </View>
-            <Text style={styles.actionText}>Mua/Bán</Text>
+            <Text style={[styles.actionText, { color: colors.text }]}>Mua/Bán</Text>
           </TouchableOpacity>
         </View>
 
         {/* Token List */}
         <View style={styles.tokenSection}>
-          <Text style={styles.sectionTitle}>Tài sản</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Tài sản</Text>
           {balance && balance.tokens.length > 0 ? (
             balance.tokens.map((token: TokenEntity, index: number) => 
               renderTokenItem(token, index)
             )
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>Không có token nào</Text>
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>Không có token nào</Text>
             </View>
           )}
         </View>

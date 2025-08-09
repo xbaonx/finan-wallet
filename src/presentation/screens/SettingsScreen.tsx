@@ -16,6 +16,8 @@ import { TabParamList, RootStackParamList } from '../navigation/types';
 import { ServiceLocator } from '../../core/di/service_locator';
 import { LogoutWalletUseCase } from '../../domain/usecases/wallet_usecases';
 import { CacheService } from '../../data/services/cache_service';
+import { useThemeColors } from '../../core/theme';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 type SettingsScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Settings'>,
@@ -28,6 +30,7 @@ interface Props {
 
 export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const handleBackupWallet = () => {
     Alert.alert('Thông báo', 'Tính năng sao lưu ví sẽ được thêm trong phiên bản tiếp theo');
   };
@@ -102,15 +105,18 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView 
-        style={styles.scrollView} 
+        style={[styles.scrollView, { backgroundColor: colors.background }]} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-          <Text style={styles.title}>Cài đặt</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Cài đặt</Text>
         </View>
+
+        {/* Theme Settings */}
+        <ThemeToggle />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Bảo mật</Text>

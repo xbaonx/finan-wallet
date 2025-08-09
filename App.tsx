@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppNavigator } from './src/presentation/navigation/AppNavigator';
 import { ServiceLocator } from './src/core/di/service_locator';
+import { ThemeProvider, useTheme } from './src/core/theme';
 import { MoralisApiService } from './src/data/services/moralis_api_service';
 
 // Initialize dependency injection synchronously
@@ -39,15 +40,28 @@ if (__DEV__) {
   console.warn('  - printMoralisSummary() - Print API call summary');
 }
 
-export default function App() {
-
+// Component để handle StatusBar theo theme
+const ThemedApp: React.FC = () => {
+  const { theme } = useTheme();
+  
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={styles.container}>
-        <StatusBar style="dark" backgroundColor="#ffffff" />
+        <StatusBar 
+          style={theme.isDark ? "light" : "dark"} 
+          backgroundColor={theme.colors.background} 
+        />
         <AppNavigator />
       </GestureHandlerRootView>
     </SafeAreaProvider>
+  );
+};
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
   );
 }
 

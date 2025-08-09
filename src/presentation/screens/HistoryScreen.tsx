@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { TabParamList } from '../navigation/types';
+import { useThemeColors } from '../../core/theme';
 
 type HistoryScreenNavigationProp = BottomTabNavigationProp<TabParamList, 'History'>;
 
@@ -15,23 +16,25 @@ interface Props {
 }
 
 export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
+  const colors = useThemeColors();
+  
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer, { backgroundColor: colors.surfaceSecondary }]}>
           <Text style={styles.icon}>📋</Text>
         </View>
-        <Text style={styles.title}>Lịch sử giao dịch</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.text }]}>Lịch sử giao dịch</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Theo dõi tất cả các giao dịch của bạn
         </Text>
         <View style={styles.featureList}>
-          <Text style={styles.featureItem}>• Lịch sử gửi và nhận token</Text>
-          <Text style={styles.featureItem}>• Chi tiết giao dịch đầy đủ</Text>
-          <Text style={styles.featureItem}>• Trạng thái giao dịch real-time</Text>
-          <Text style={styles.featureItem}>• Xuất báo cáo giao dịch</Text>
+          <Text style={[styles.featureItem, { color: colors.textSecondary }]}>• Lịch sử gửi và nhận token</Text>
+          <Text style={[styles.featureItem, { color: colors.textSecondary }]}>• Chi tiết giao dịch đầy đủ</Text>
+          <Text style={[styles.featureItem, { color: colors.textSecondary }]}>• Trạng thái giao dịch real-time</Text>
+          <Text style={[styles.featureItem, { color: colors.textSecondary }]}>• Xuất báo cáo giao dịch</Text>
         </View>
-        <Text style={styles.comingSoon}>Sắp ra mắt...</Text>
+        <Text style={[styles.comingSoon, { color: colors.primary }]}>Sắp ra mắt...</Text>
       </View>
     </SafeAreaView>
   );

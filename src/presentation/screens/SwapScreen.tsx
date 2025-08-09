@@ -1,22 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  StyleSheet,
   TouchableOpacity,
-  FlatList,
-  TextInput,
   Modal,
-  Image,
+  TextInput,
   Alert,
   ActivityIndicator,
-  RefreshControl,
   ScrollView,
+  Image,
+  Dimensions,
+  FlatList,
+  RefreshControl,
   Platform,
   Keyboard,
-  Dimensions,
   KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useThemeColors } from '../../core/theme';
 import { SwapBloc } from '../blocs/swap_bloc';
 import { SwapState, SwapInitialState, SwapLoadingState, TokensLoadedState, QuoteLoadingState, QuoteLoadedState, SwapSuccessState, SwapFailedState, SwapErrorState, ApprovingTokenState, TokenApprovedState } from '../blocs/swap_state';
 import { LoadSupportedTokensEvent, GetSwapQuoteEvent, ConfirmSwapEvent, ApproveTokenEvent, ResetSwapEvent, RefreshTokenBalancesEvent } from '../blocs/swap_event';
@@ -38,6 +40,7 @@ interface CoinListItemProps {
 }
 
 const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPress, showBuyButton, showSellButton, tokenPrices, priceLoading }) => {
+  const colors = useThemeColors();
   const formatPrice = (price?: number) => {
     if (!price) return '$0.00';
     return price < 0.01 ? `$${price.toFixed(6)}` : `$${price.toFixed(2)}`;
@@ -65,8 +68,8 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
       alignItems: 'center',
       padding: 16,
       borderBottomWidth: 1,
-      borderBottomColor: '#f3f4f6',
-      backgroundColor: 'white',
+      borderBottomColor: colors.border,
+      backgroundColor: colors.background,
     }}>
       {/* Token Info */}
       <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -87,7 +90,7 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
               onError={() => {}}
             />
           ) : (
-            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#6b7280' }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.textSecondary }}>
               {token.symbol.charAt(0)}
             </Text>
           )}
@@ -101,9 +104,9 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
               width: 16,
               height: 16,
               borderRadius: 8,
-              backgroundColor: 'white',
+              backgroundColor: colors.background,
               borderWidth: 1,
-              borderColor: '#e5e7eb',
+              borderColor: colors.border,
               justifyContent: 'center',
               alignItems: 'center',
             }}>
@@ -120,7 +123,7 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
           <Text style={{
             fontSize: 16,
             fontWeight: '600',
-            color: '#111827',
+            color: colors.text,
             marginBottom: 2,
           }}>
             {token.symbol}
@@ -128,7 +131,7 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{
               fontSize: 14,
-              color: '#6b7280',
+              color: colors.textSecondary,
             }}>
               {token.name}
             </Text>
@@ -916,6 +919,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
 };
 export const SwapScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [swapBloc] = useState(() => ServiceLocator.get<SwapBloc>('SwapBloc'));
   const [state, setState] = useState<SwapState>(new SwapInitialState());
   const [searchQuery, setSearchQuery] = useState('');
@@ -1386,34 +1390,38 @@ export const SwapScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+    <SafeAreaView style={{
+      flex: 1,
+      backgroundColor: colors.background,
+    }}>
       {/* Header */}
       <View style={{
-        backgroundColor: 'white',
+        backgroundColor: colors.background,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: colors.border,
+        paddingTop: Math.max(insets.top + 16, 32),
       }}>
         <Text style={{
           fontSize: 20,
           fontWeight: 'bold',
-          color: '#111827',
+          color: colors.text,
           textAlign: 'center',
         }}>Mua bán Coin</Text>
       </View>
 
       {/* Tab Buttons */}
       <View style={{
-        backgroundColor: 'white',
+        backgroundColor: colors.background,
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: colors.border,
       }}>
         <View style={{
           flexDirection: 'row',
-          backgroundColor: '#f3f4f6',
+          backgroundColor: colors.surfaceSecondary,
           borderRadius: 12,
           padding: 4,
         }}>
@@ -1424,7 +1432,7 @@ export const SwapScreen: React.FC = () => {
         {/* Tab Description */}
         <Text style={{
           fontSize: 14,
-          color: '#6b7280',
+          color: colors.textSecondary,
           textAlign: 'center',
           marginTop: 8,
         }}>
@@ -1434,23 +1442,23 @@ export const SwapScreen: React.FC = () => {
 
       {/* Search Bar */}
       <View style={{
-        backgroundColor: 'white',
+        backgroundColor: colors.background,
         paddingHorizontal: 16,
         paddingBottom: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: colors.border,
       }}>
         <TextInput
           style={{
-            backgroundColor: '#f3f4f6',
+            backgroundColor: colors.surfaceSecondary,
             borderRadius: 12,
             paddingHorizontal: 16,
             paddingVertical: 12,
             fontSize: 16,
-            color: '#111827',
+            color: colors.text,
           }}
           placeholder={`Tìm kiếm coin ${activeTab === 'buy' ? 'để mua' : 'để bán'}...`}
-          placeholderTextColor="#6b7280"
+          placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -1462,12 +1470,13 @@ export const SwapScreen: React.FC = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
+          backgroundColor: colors.background,
         }}>
-          <ActivityIndicator size="large" color="#3b82f6" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={{
             marginTop: 16,
             fontSize: 16,
-            color: '#6b7280',
+            color: colors.textSecondary,
           }}>
             {state.message}
           </Text>
@@ -1489,7 +1498,7 @@ export const SwapScreen: React.FC = () => {
           </Text>
           <TouchableOpacity
             style={{
-              backgroundColor: '#3b82f6',
+              backgroundColor: colors.primary,
               paddingHorizontal: 24,
               paddingVertical: 12,
               borderRadius: 8,
@@ -1497,7 +1506,7 @@ export const SwapScreen: React.FC = () => {
             onPress={handleRefresh}
           >
             <Text style={{
-              color: 'white',
+              color: colors.textInverse,
               fontSize: 16,
               fontWeight: '600',
             }}>
@@ -1511,17 +1520,18 @@ export const SwapScreen: React.FC = () => {
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: 32,
+          backgroundColor: colors.background,
         }}>
           <Text style={{
             fontSize: 48,
             marginBottom: 16,
           }}>
-            {activeTab === 'buy' ? '' : ''}
+            {activeTab === 'buy' ? '🛒' : '💰'}
           </Text>
           <Text style={{
             fontSize: 18,
             fontWeight: '600',
-            color: '#111827',
+            color: colors.text,
             textAlign: 'center',
             marginBottom: 8,
           }}>
@@ -1530,7 +1540,7 @@ export const SwapScreen: React.FC = () => {
           {activeTab === 'sell' && (
             <Text style={{
               fontSize: 14,
-              color: '#6b7280',
+              color: colors.textSecondary,
               textAlign: 'center',
             }}>
               Hãy mua một số coin trước để có thể bán
@@ -1546,7 +1556,7 @@ export const SwapScreen: React.FC = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#3b82f6"
+              tintColor={colors.primary}
             />
           }
           showsVerticalScrollIndicator={false}
