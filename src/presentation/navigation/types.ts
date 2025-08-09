@@ -15,6 +15,7 @@ export type RootStackParamList = {
 export type TabParamList = {
   Dashboard: undefined;
   Swap: undefined;
+  DepositWithdraw: undefined;
   History: undefined;
   Settings: undefined;
 };

@@ -708,6 +708,48 @@ const SwapModal: React.FC<SwapModalProps> = ({
                 }}>
                   {quote.toAmount} {getToToken()}
                 </Text>
+                
+                {/* Fee Information */}
+                <View style={{
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: '#e0f2fe',
+                }}>
+                  <View style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 6,
+                  }}>
+                    <Text style={{
+                      fontSize: 12,
+                      color: '#0369a1',
+                      opacity: 0.8,
+                    }}>
+                      Phí nền tảng (0.7%)
+                    </Text>
+                    <Text style={{
+                      fontSize: 12,
+                      color: '#0369a1',
+                      fontWeight: '500',
+                    }}>
+                      {(() => {
+                        const fromAmount = parseFloat(quote.fromAmount || '0');
+                        const feeAmount = fromAmount * 0.007; // 0.7% fee
+                        return `${feeAmount.toFixed(6)} ${quote.fromToken.symbol}`;
+                      })()}
+                    </Text>
+                  </View>
+                  <Text style={{
+                    fontSize: 11,
+                    color: '#0369a1',
+                    opacity: 0.7,
+                    fontStyle: 'italic',
+                  }}>
+                    Giao dịch qua 1inch DEX • Phí được tích hợp tự động
+                  </Text>
+                </View>
               </View>
             ) : null}
           </ScrollView>

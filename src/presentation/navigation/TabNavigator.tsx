@@ -4,22 +4,26 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabParamList } from './types';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { SwapScreen } from '../screens/SwapScreen';
+import { DepositWithdrawScreen } from '../screens/DepositWithdrawScreen';
 import { TransactionHistoryScreenWrapper } from '../screens/TransactionHistoryScreenWrapper';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { useThemeColors } from '../../core/theme';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export const TabNavigator: React.FC = () => {
+  const colors = useThemeColors();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#3b82f6',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: '#f3f4f6',
+          borderTopColor: colors.border,
           paddingBottom: 8,
           paddingTop: 8,
           height: 88,
@@ -49,6 +53,16 @@ export const TabNavigator: React.FC = () => {
           tabBarLabel: 'Mua/Bán',
           tabBarIcon: ({ color, size }) => (
             <TabIcon icon="⇄" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="DepositWithdraw"
+        component={DepositWithdrawScreen}
+        options={{
+          tabBarLabel: 'Nạp/Rút',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon icon="💰" color={color} size={size} />
           ),
         }}
       />

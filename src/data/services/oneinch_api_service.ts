@@ -193,6 +193,9 @@ export class OneInchApiService {
         includeTokensInfo: 'true',
         includeProtocols: 'true',
         includeGas: 'true',
+        // Referrer fee parameters
+        referrer: API_CONFIG.ONEINCH.REFERRER.ADDRESS,
+        fee: API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE.toString(),
       };
 
       // Sử dụng endpoint từ config
@@ -346,7 +349,10 @@ export class OneInchApiService {
         disableEstimate: 'false',
         includeTokensInfo: 'true',
         includeProtocols: 'true',
-        includeGas: 'true'
+        includeGas: 'true',
+        // Referrer fee parameters
+        referrer: API_CONFIG.ONEINCH.REFERRER.ADDRESS,
+        fee: API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE.toString(),
       };
       
       const endpoint = this.endpoints.SWAP.replace('{chainId}', this.chainId.toString());

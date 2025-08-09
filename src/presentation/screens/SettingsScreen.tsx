@@ -16,8 +16,7 @@ import { TabParamList, RootStackParamList } from '../navigation/types';
 import { ServiceLocator } from '../../core/di/service_locator';
 import { LogoutWalletUseCase } from '../../domain/usecases/wallet_usecases';
 import { CacheService } from '../../data/services/cache_service';
-import { useThemeColors } from '../../core/theme';
-import { ThemeToggle } from '../components/ThemeToggle';
+import { useThemeColors, useTheme } from '../../core/theme';
 
 type SettingsScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Settings'>,
@@ -31,6 +30,8 @@ interface Props {
 export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const { themeMode, setThemeMode } = useTheme();
+  const styles = createStyles(colors);
   const handleBackupWallet = () => {
     Alert.alert('Thông báo', 'Tính năng sao lưu ví sẽ được thêm trong phiên bản tiếp theo');
   };
@@ -41,6 +42,20 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSupport = () => {
     Alert.alert('Hỗ trợ', 'Liên hệ: support@finan.vn');
+  };
+
+  const handleThemeToggle = () => {
+    const nextTheme = themeMode === 'light' ? 'dark' : themeMode === 'dark' ? 'system' : 'light';
+    setThemeMode(nextTheme);
+  };
+
+  const getThemeText = () => {
+    switch (themeMode) {
+      case 'light': return 'Sáng';
+      case 'dark': return 'Tối';
+      case 'system': return 'Theo hệ thống';
+      default: return 'Sáng';
+    }
   };
 
   const handleLogoutWallet = () => {
@@ -115,9 +130,6 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={[styles.title, { color: colors.text }]}>Cài đặt</Text>
         </View>
 
-        {/* Theme Settings */}
-        <ThemeToggle />
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Bảo mật</Text>
           {renderSettingItem(
@@ -131,6 +143,16 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             'Mở khóa bằng vân tay/Face ID',
             handleSecurity,
             '👆'
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Giao diện</Text>
+          {renderSettingItem(
+            'Chế độ giao diện',
+            `Hiện tại: ${getThemeText()}`,
+            handleThemeToggle,
+            '🎨'
           )}
         </View>
 
@@ -192,10 +214,10 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -208,7 +230,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.text,
   },
   section: {
     marginBottom: 32,
@@ -216,7 +238,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 16,
     marginHorizontal: 24,
   },
@@ -227,7 +249,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: colors.border,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -238,13 +260,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   settingIconText: {
     fontSize: 18,
+    color: colors.text,
   },
   settingInfo: {
     flex: 1,
@@ -252,16 +275,16 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.text,
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
   },
   settingArrow: {
     fontSize: 20,
-    color: '#9ca3af',
+    color: colors.textSecondary,
   },
   infoItem: {
     flexDirection: 'row',
@@ -272,11 +295,11 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
-    color: '#374151',
+    color: colors.text,
   },
   infoValue: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   footer: {
@@ -286,7 +309,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   // Danger styles for logout wallet

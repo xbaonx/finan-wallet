@@ -26,6 +26,11 @@ export const API_CONFIG = {
       QUOTE: '/swap/v6.0/{chainId}/quote',
       SWAP: '/swap/v6.0/{chainId}/swap',
       APPROVE: '/swap/v6.0/{chainId}/approve/transaction'
+    },
+    // Referrer Fee Configuration
+    REFERRER: {
+      ADDRESS: '0x62EC88A97156233cdB416024AC5011C5B9A6f361', // Binance BSC wallet để nhận fee
+      FEE_PERCENTAGE: 0.7, // 0.7% fee (trong range 0-3% của 1inch)
     }
   },
 
