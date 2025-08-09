@@ -58,22 +58,60 @@ export const DepositWithdrawScreen: React.FC = () => {
 
     dashboardBloc.addListener(handleStateChange);
     
-    // KHÔNG gọi LoadDashboardEvent để tránh duplicate API calls
-    // Chỉ listen data từ Dashboard screen
+    // Kiểm tra current state của DashboardBloc
+    const currentState = dashboardBloc.state;
+    console.log('🔍 DepositWithdraw checking current state:', currentState?.constructor?.name);
+    
+    if (currentState instanceof DashboardLoaded) {
+      setIsLoading(false);
+      setBalance(currentState.balance);
+      console.log('✅ DepositWithdraw sử dụng balance có sẵn từ Dashboard:', currentState.balance);
+    } else if (currentState instanceof DashboardError) {
+      setIsLoading(false);
+      console.error('Dashboard error:', currentState.message);
+    } else {
+      // Nếu Dashboard chưa load data, trigger load một lần
+      console.log('🔄 Dashboard chưa có data, trigger load...');
+      dashboardBloc.add(new LoadDashboardEvent());
+    }
+    
+    // Fallback: Nếu sau 5 giây vẫn loading, tự động tắt spinner
+    const fallbackTimer = setTimeout(() => {
+      setIsLoading(false);
+      console.log('⏰ DepositWithdraw timeout - tắt loading spinner (fallback)');
+    }, 5000);
+    
     console.log('👂 DepositWithdraw screen listening for balance updates (passive mode)');
 
-    return () => dashboardBloc.removeListener(handleStateChange);
-  }, [dashboardBloc]);
+    return () => {
+      dashboardBloc.removeListener(handleStateChange);
+      clearTimeout(fallbackTimer);
+    };
+  }, [dashboardBloc]); // Chỉ depend vào dashboardBloc, không depend vào isLoading
 
   // Get USDT balance from dashboard data
   const getUSDTBalance = (): string => {
-    if (!balance || !balance.tokens) return '0.00';
+    console.log('🔍 getUSDTBalance called - balance:', balance);
+    
+    if (!balance || !balance.tokens) {
+      console.log('❌ No balance or tokens data available');
+      return '0.00';
+    }
+    
+    console.log('📋 Available tokens:', balance.tokens.map((t: any) => `${t.symbol}: ${t.balance}`));
     
     const usdtToken = balance.tokens.find((token: any) => 
       token.symbol === 'USDT' || token.address?.toLowerCase().includes('usdt')
     );
     
-    return usdtToken ? parseFloat(usdtToken.balance || '0').toFixed(2) : '0.00';
+    if (usdtToken) {
+      const formattedBalance = parseFloat(usdtToken.balance || '0').toFixed(2);
+      console.log('✅ Found USDT token:', usdtToken.symbol, 'balance:', formattedBalance);
+      return formattedBalance;
+    } else {
+      console.log('❌ USDT token not found in balance data');
+      return '0.00';
+    }
   };
 
   const tokenInfo = {
