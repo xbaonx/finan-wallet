@@ -283,7 +283,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }]}
+            style={[styles.actionButton, { backgroundColor: colors.background }]}
             onPress={handleSend}
             activeOpacity={0.8}
           >
@@ -294,7 +294,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }]}
+            style={[styles.actionButton, { backgroundColor: colors.background }]}
             onPress={handleReceive}
             activeOpacity={0.8}
           >
@@ -305,7 +305,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }]}
+            style={[styles.actionButton, { backgroundColor: colors.background }]}
             onPress={handleSwap}
             activeOpacity={0.8}
           >
