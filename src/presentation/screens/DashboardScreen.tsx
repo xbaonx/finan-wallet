@@ -320,7 +320,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Token List Header + FlatList */}
       <View style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: 8, backgroundColor: colors.background }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: 8 }}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Tài sản</Text>
         </View>
         
