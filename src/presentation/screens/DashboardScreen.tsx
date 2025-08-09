@@ -317,7 +317,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         {/* Token List Header */}
-        <View style={{ paddingHorizontal: 16, paddingVertical: 16, backgroundColor: colors.background }}>
+        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.background }}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Tài sản</Text>
         </View>
       </ScrollView>
