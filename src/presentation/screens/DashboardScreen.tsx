@@ -320,34 +320,28 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.background }}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Tài sản</Text>
         </View>
-      </ScrollView>
 
-      {/* Token List - Separate FlatList for better spacing */}
-      {balance && balance.tokens.length > 0 ? (
-        <FlatList
-          data={balance.tokens}
-          renderItem={({ item, index }: { item: TokenEntity, index: number }) => renderTokenItem(item, index)}
-          keyExtractor={(item: TokenEntity, index: number) => `${item.address}-${index}`}
-          showsVerticalScrollIndicator={false}
-          style={{ flex: 1, marginBottom: -88 }}
-          contentContainerStyle={{ paddingBottom: 88 }}
-        />
-      ) : (
-        <View style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingHorizontal: 32,
-        }}>
-          <Text style={{
-            fontSize: 16,
-            color: colors.textSecondary,
-            textAlign: 'center',
+        {/* Token List */}
+        {balance && balance.tokens.length > 0 ? (
+          balance.tokens.map((token: TokenEntity, index: number) => 
+            renderTokenItem(token, index)
+          )
+        ) : (
+          <View style={{
+            paddingVertical: 32,
+            alignItems: 'center',
+            paddingHorizontal: 32,
           }}>
-            Không có token nào
-          </Text>
-        </View>
-      )}
+            <Text style={{
+              fontSize: 16,
+              color: colors.textSecondary,
+              textAlign: 'center',
+            }}>
+              Không có token nào
+            </Text>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
