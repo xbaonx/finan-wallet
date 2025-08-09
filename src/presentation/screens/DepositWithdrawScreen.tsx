@@ -17,7 +17,7 @@ import { DashboardBloc } from '../blocs/dashboard_bloc';
 import { LoadDashboardEvent } from '../blocs/dashboard_event';
 import { DashboardState, DashboardLoading, DashboardLoaded, DashboardError } from '../blocs/dashboard_state';
 import { ServiceLocator } from '../../core/di/service_locator';
-import { VietnamBankingService, BankInfo, VIETNAM_BANKS } from '../../data/services/vietnam_banking_service';
+import { VietnamBankingService, BankInfo, VIETNAM_BANKS, RECEIVER_BANK } from '../../data/services/vietnam_banking_service';
 
 export const DepositWithdrawScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -39,6 +39,7 @@ export const DepositWithdrawScreen: React.FC = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [showBankSelection, setShowBankSelection] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showPaymentInfo, setShowPaymentInfo] = useState(false); // Dropdown toggle
 
   // Vietnam Banking Service
   const bankingService = VietnamBankingService.getInstance();
@@ -168,19 +169,33 @@ export const DepositWithdrawScreen: React.FC = () => {
       return;
     }
 
-    setShowBankSelection(true);
-  };
-
-  const handleBankSelection = (bank: BankInfo) => {
-    setSelectedBank(bank);
-    setShowBankSelection(false);
+    // Sử dụng tài khoản nhận cố định (RECEIVER_BANK)
+    setSelectedBank(RECEIVER_BANK);
     
     // Tạo transaction ID và QR code
     const txId = bankingService.generateTransactionId();
     setTransactionId(txId);
     
     const content = bankingService.generateTransferContent(txId, parseFloat(amount));
-    const qrUrl = bankingService.generateVietQRCode(bank, vndAmount, content);
+    const qrUrl = bankingService.generateVietQRCode(RECEIVER_BANK, vndAmount, content);
+    setQrCodeUrl(qrUrl);
+    
+    setShowPaymentDetails(true);
+  };
+
+  const handleBankSelection = (userBank: BankInfo) => {
+    setShowBankSelection(false);
+    
+    // Tài khoản nhận luôn là MB Bank của bạn
+    const receiverBank = VIETNAM_BANKS[0]; // MB Bank
+    setSelectedBank(receiverBank);
+    
+    // Tạo transaction ID và QR code
+    const txId = bankingService.generateTransactionId();
+    setTransactionId(txId);
+    
+    const content = bankingService.generateTransferContent(txId, parseFloat(amount));
+    const qrUrl = bankingService.generateVietQRCode(receiverBank, vndAmount, content);
     setQrCodeUrl(qrUrl);
     
     setShowPaymentDetails(true);
@@ -196,6 +211,25 @@ export const DepositWithdrawScreen: React.FC = () => {
       Alert.alert(
         'Thành công',
         'Đã mở ứng dụng ngân hàng. Vui lòng hoàn tất giao dịch chuyển khoản.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleOpenSpecificBankApp = async (bank: BankInfo) => {
+    const content = bankingService.generateTransferContent(transactionId, parseFloat(amount));
+    const success = await bankingService.openBankingApp(bank, vndAmount, content);
+    
+    if (success) {
+      Alert.alert(
+        'Thành công',
+        `Đã mở ứng dụng ${bank.shortName}. Vui lòng chuyển khoản đến MB Bank theo thông tin trên.`,
+        [{ text: 'OK' }]
+      );
+    } else {
+      Alert.alert(
+        'Thông báo',
+        `Không thể mở ứng dụng ${bank.shortName}. Vui lòng mở thủ công hoặc quét mã QR.`,
         [{ text: 'OK' }]
       );
     }
@@ -396,6 +430,12 @@ export const DepositWithdrawScreen: React.FC = () => {
       fontSize: 18,
       fontWeight: '600',
       color: colors.text,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    bankSelectionSubtitle: {
+      fontSize: 14,
+      color: colors.textSecondary,
       marginBottom: 16,
       textAlign: 'center',
     },
@@ -426,7 +466,7 @@ export const DepositWithdrawScreen: React.FC = () => {
     },
     paymentDetailsModal: {
       position: 'absolute',
-      top: 0,
+      top: insets.top, // Respect safe area
       left: 0,
       right: 0,
       bottom: 0,
@@ -438,6 +478,7 @@ export const DepositWithdrawScreen: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: 20,
+      paddingTop: 16, // Reduce top padding since we already have insets.top
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -471,6 +512,37 @@ export const DepositWithdrawScreen: React.FC = () => {
       borderRadius: 12,
       padding: 16,
       marginBottom: 16,
+    },
+    paymentInfoHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: '#e5e7eb',
+    },
+    paymentInfoTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    copyIconButton: {
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: '#f3f4f6',
+    },
+    copyIcon: {
+      fontSize: 18,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    dropdownIcon: {
+      fontSize: 16,
+      color: colors.textSecondary,
     },
     paymentInfoRow: {
       flexDirection: 'row',
@@ -513,6 +585,47 @@ export const DepositWithdrawScreen: React.FC = () => {
     },
     secondaryActionButtonText: {
       color: colors.text,
+    },
+    // Bank Apps Grid styles
+    bankAppsContainer: {
+      marginTop: 20,
+    },
+    bankAppsTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    bankAppsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    bankAppButton: {
+      width: '30%',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    bankAppLogo: {
+      fontSize: 24,
+      marginBottom: 4,
+    },
+    bankAppLogoImage: {
+      width: 40,
+      height: 40,
+      marginBottom: 4,
+    },
+    bankAppName: {
+      fontSize: 12,
+      color: colors.text,
+      textAlign: 'center',
+      fontWeight: '500',
     },
   });
 
@@ -605,51 +718,10 @@ export const DepositWithdrawScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>
-            {activeTab === 'deposit' ? '📝 Hướng dẫn nạp tiền' : '⚠️ Lưu ý khi rút tiền'}
-          </Text>
-          <Text style={styles.infoText}>
-            {activeTab === 'deposit'
-              ? 'Tính năng nạp tiền sẽ hỗ trợ chuyển khoản ngân hàng, ví điện tử và các phương thức thanh toán khác. Hiện tại đang trong quá trình phát triển.'
-              : 'Tính năng rút tiền sẽ cho phép chuyển token về ví ngoài hoặc chuyển đổi thành tiền mặt. Vui lòng chờ cập nhật trong phiên bản tiếp theo.'
-            }
-          </Text>
-        </View>
+
       </ScrollView>
 
-      {/* Bank Selection Modal */}
-      {showBankSelection && (
-        <View style={styles.bankSelectionModal}>
-          <View style={styles.bankSelectionContent}>
-            <Text style={styles.bankSelectionTitle}>Chọn ngân hàng</Text>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {VIETNAM_BANKS.map((bank) => (
-                <TouchableOpacity
-                  key={bank.id}
-                  style={styles.bankItem}
-                  onPress={() => handleBankSelection(bank)}
-                >
-                  <Text style={styles.bankLogo}>{bank.logo}</Text>
-                  <View style={styles.bankInfo}>
-                    <Text style={styles.bankName}>{bank.shortName}</Text>
-                    <Text style={styles.bankAccount}>STK: {bank.accountNumber}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.secondaryActionButton]}
-              onPress={() => setShowBankSelection(false)}
-            >
-              <Text style={[styles.actionButtonText, styles.secondaryActionButtonText]}>
-                Hủy
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+
 
       {/* Payment Details Modal */}
       {showPaymentDetails && selectedBank && (
@@ -679,65 +751,81 @@ export const DepositWithdrawScreen: React.FC = () => {
 
             {/* Payment Information */}
             <View style={styles.paymentInfoCard}>
-              <View style={styles.paymentInfoRow}>
-                <Text style={styles.paymentInfoLabel}>Ngân hàng:</Text>
-                <Text style={styles.paymentInfoValue}>{selectedBank.shortName}</Text>
-              </View>
-              <View style={styles.paymentInfoRow}>
-                <Text style={styles.paymentInfoLabel}>Số tài khoản:</Text>
-                <Text style={styles.paymentInfoValue}>{selectedBank.accountNumber}</Text>
-              </View>
-              <View style={styles.paymentInfoRow}>
-                <Text style={styles.paymentInfoLabel}>Tên tài khoản:</Text>
-                <Text style={styles.paymentInfoValue}>{selectedBank.accountName}</Text>
-              </View>
-              <View style={styles.paymentInfoRow}>
-                <Text style={styles.paymentInfoLabel}>Số tiền:</Text>
-                <Text style={[styles.paymentInfoValue, { color: '#059669', fontWeight: 'bold' }]}>
-                  {vndAmount.toLocaleString('vi-VN')} VND
-                </Text>
-              </View>
-              <View style={styles.paymentInfoRow}>
-                <Text style={styles.paymentInfoLabel}>Nội dung:</Text>
-                <Text style={styles.paymentInfoValue}>
-                  {bankingService.generateTransferContent(transactionId, parseFloat(amount))}
-                </Text>
-              </View>
-              <View style={styles.paymentInfoRow}>
-                <Text style={styles.paymentInfoLabel}>Mã giao dịch:</Text>
-                <Text style={styles.paymentInfoValue}>{transactionId}</Text>
-              </View>
+              <TouchableOpacity 
+                style={styles.paymentInfoHeader}
+                onPress={() => setShowPaymentInfo(!showPaymentInfo)}
+              >
+                <Text style={styles.paymentInfoTitle}>Thông tin chuyển khoản</Text>
+                <View style={styles.headerActions}>
+                  <TouchableOpacity
+                    style={styles.copyIconButton}
+                    onPress={handleCopyAccountInfo}
+                  >
+                    <Text style={styles.copyIcon}>📋</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.dropdownIcon}>
+                    {showPaymentInfo ? '▲' : '▼'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              
+              {showPaymentInfo && (
+                <>
+                  <View style={styles.paymentInfoRow}>
+                    <Text style={styles.paymentInfoLabel}>Ngân hàng:</Text>
+                    <Text style={styles.paymentInfoValue}>{selectedBank.shortName}</Text>
+                  </View>
+                  <View style={styles.paymentInfoRow}>
+                    <Text style={styles.paymentInfoLabel}>Số tài khoản:</Text>
+                    <Text style={styles.paymentInfoValue}>{selectedBank.accountNumber}</Text>
+                  </View>
+                  <View style={styles.paymentInfoRow}>
+                    <Text style={styles.paymentInfoLabel}>Tên tài khoản:</Text>
+                    <Text style={styles.paymentInfoValue}>{selectedBank.accountName}</Text>
+                  </View>
+                  <View style={styles.paymentInfoRow}>
+                    <Text style={styles.paymentInfoLabel}>Số tiền:</Text>
+                    <Text style={[styles.paymentInfoValue, { color: '#059669', fontWeight: 'bold' }]}>
+                      {vndAmount.toLocaleString('vi-VN')} VND
+                    </Text>
+                  </View>
+                  <View style={styles.paymentInfoRow}>
+                    <Text style={styles.paymentInfoLabel}>Nội dung:</Text>
+                    <Text style={styles.paymentInfoValue}>
+                      {bankingService.generateTransferContent(transactionId, parseFloat(amount))}
+                    </Text>
+                  </View>
+                  <View style={styles.paymentInfoRow}>
+                    <Text style={styles.paymentInfoLabel}>Mã giao dịch:</Text>
+                    <Text style={styles.paymentInfoValue}>{transactionId}</Text>
+                  </View>
+                </>
+              )}
             </View>
 
-            {/* Action Buttons */}
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleOpenBankingApp}
-              >
-                <Text style={styles.actionButtonText}>
-                  🏦 Mở app {selectedBank.shortName}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.secondaryActionButton]}
-                onPress={handleCopyAccountInfo}
-              >
-                <Text style={[styles.actionButtonText, styles.secondaryActionButtonText]}>
-                  📋 Sao chép thông tin
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Instructions */}
-            <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>📝 Hướng dẫn chuyển khoản</Text>
-              <Text style={styles.infoText}>
-                1. Quét mã QR hoặc mở app ngân hàng{'\n'}
-                2. Chuyển khoản đúng số tiền và nội dung{'\n'}
-                3. USDT sẽ được nạp vào ví sau 5-10 phút{'\n'}
-                4. Liên hệ hỗ trợ nếu có vấn đề
-              </Text>
+            {/* Bank Apps Grid */}
+            <View style={styles.bankAppsContainer}>
+              <Text style={styles.bankAppsTitle}>Chọn app ngân hàng để chuyển tiền</Text>
+              <View style={styles.bankAppsGrid}>
+                {VIETNAM_BANKS.map((bank) => (
+                  <TouchableOpacity
+                    key={bank.id}
+                    style={styles.bankAppButton}
+                    onPress={() => handleOpenSpecificBankApp(bank)}
+                  >
+                    {bank.logoUrl ? (
+                      <Image
+                        source={{ uri: bank.logoUrl }}
+                        style={styles.bankAppLogoImage}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={styles.bankAppLogo}>{bank.logo}</Text>
+                    )}
+                    <Text style={styles.bankAppName}>{bank.shortName}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           </ScrollView>
         </View>

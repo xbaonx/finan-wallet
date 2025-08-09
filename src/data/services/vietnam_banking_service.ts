@@ -11,60 +11,114 @@ export interface BankInfo {
   accountNumber: string;
   accountName: string;
   qrPrefix: string;
-  deepLinkScheme?: string;
+  deepLinkScheme: string;
   logo: string;
+  logoUrl?: string; // URL logo thật
 }
 
+// Tài khoản nhận tiền (cố định)
+export const RECEIVER_BANK: BankInfo = {
+  id: 'mb',
+  name: 'Ngân hàng TMCP Quân đội',
+  shortName: 'MB Bank',
+  accountNumber: '0550100078888',
+  accountName: 'NGUYEN XUAN BAO',
+  qrPrefix: 'https://img.vietqr.io/image/970422-0550100078888-compact2.png',
+  deepLinkScheme: 'https://dl.vietqr.io/pay?app=mb',
+  logo: '🏦',
+  logoUrl: 'https://is2-ssl.mzstatic.com/image/thumb/Purple122/v4/f4/0a/b6/f40ab6a2-e67d-e267-9c46-ae03dfa238a9/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
+};
+
+// Danh sách ngân hàng để người dùng chọn mở app
 export const VIETNAM_BANKS: BankInfo[] = [
+  RECEIVER_BANK,
   {
-    id: 'vietcombank',
+    id: 'vcb',
     name: 'Ngân hàng TMCP Ngoại thương Việt Nam',
     shortName: 'Vietcombank',
-    accountNumber: '1234567890',
-    accountName: 'FINAN CRYPTO WALLET',
-    qrPrefix: 'https://img.vietqr.io/image/970436-1234567890-compact2.png',
-    deepLinkScheme: 'vcbdigibank://',
-    logo: '🏦'
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=vcb',
+    logo: '🏛️',
+    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple122/v4/c6/c9/ed/c6c9ed04-11f8-7269-fcc3-9609126682c0/AppIcon-1x_U007emarketing-0-7-0-0-85-220.png/1200x630wa.png'
   },
   {
-    id: 'techcombank',
+    id: 'tcb',
     name: 'Ngân hàng TMCP Kỹ thương Việt Nam',
     shortName: 'Techcombank',
-    accountNumber: '9876543210',
-    accountName: 'FINAN CRYPTO WALLET',
-    qrPrefix: 'https://img.vietqr.io/image/970407-9876543210-compact2.png',
-    deepLinkScheme: 'tcb://',
-    logo: '🏛️'
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=tcb',
+    logo: '🏪',
+    logoUrl: 'https://is5-ssl.mzstatic.com/image/thumb/Purple122/v4/b2/b4/d1/b2b4d153-ed9f-aab6-996c-205c583c1339/AppIcon-0-0-1x_U007emarketing-0-0-0-10-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
   },
   {
-    id: 'vietinbank',
+    id: 'icb',
     name: 'Ngân hàng TMCP Công thương Việt Nam',
     shortName: 'VietinBank',
-    accountNumber: '5555666677',
-    accountName: 'FINAN CRYPTO WALLET',
-    qrPrefix: 'https://img.vietqr.io/image/970415-5555666677-compact2.png',
-    deepLinkScheme: 'vietinbank://',
-    logo: '🏪'
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=icb',
+    logo: '🏢',
+    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple112/v4/14/04/b8/1404b8f4-a91f-f8bf-7af5-1a0e59bbdf19/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
   },
   {
     id: 'bidv',
     name: 'Ngân hàng TMCP Đầu tư và Phát triển Việt Nam',
     shortName: 'BIDV',
-    accountNumber: '1111222233',
-    accountName: 'FINAN CRYPTO WALLET',
-    qrPrefix: 'https://img.vietqr.io/image/970418-1111222233-compact2.png',
-    deepLinkScheme: 'bidv://',
-    logo: '🏢'
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=bidv',
+    logo: '🏨',
+    logoUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Purple112/v4/88/1b/e6/881be6df-e9b6-8b66-e0fb-2499ac874734/AppIcon-1x_U007emarketing-0-6-0-0-85-220.png/1200x630wa.png'
   },
   {
-    id: 'agribank',
+    id: 'vba',
     name: 'Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam',
     shortName: 'Agribank',
-    accountNumber: '3333444455',
-    accountName: 'FINAN CRYPTO WALLET',
-    qrPrefix: 'https://img.vietqr.io/image/970405-3333444455-compact2.png',
-    deepLinkScheme: 'agribank://',
-    logo: '🌾'
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=vba',
+    logo: '🌾',
+    logoUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Purple112/v4/a6/7e/98/a67e98e6-20c2-5f96-c364-f79a9fe03819/AppIcon-1x_U007emarketing-0-5-0-0-85-220.png/1200x630wa.png'
+  },
+  {
+    id: 'acb',
+    name: 'Ngân hàng TMCP Á Châu',
+    shortName: 'ACB',
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=acb',
+    logo: '🏪',
+    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple122/v4/a1/ae/1e/a1ae1e68-2d58-92bc-9ec5-42917a59f767/AppIcon-1x_U007emarketing-0-7-0-0-85-220.png/1200x630wa.png'
+  },
+  {
+    id: 'vpb',
+    name: 'Ngân hàng TMCP Việt Nam Thịnh Vượng',
+    shortName: 'VPBank',
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=vpb',
+    logo: '🏦',
+    logoUrl: 'https://is3-ssl.mzstatic.com/image/thumb/Purple122/v4/0f/45/e5/0f45e506-590d-860d-8a0f-61c460d8b6dd/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
+  },
+  {
+    id: 'tpb',
+    name: 'Ngân hàng TMCP Tiên Phong',
+    shortName: 'TPBank',
+    accountNumber: '',
+    accountName: '',
+    qrPrefix: '',
+    deepLinkScheme: 'https://dl.vietqr.io/pay?app=tpb',
+    logo: '🏛️',
+    logoUrl: 'https://is3-ssl.mzstatic.com/image/thumb/Purple122/v4/c3/31/46/c3314678-be31-dda0-621b-ff8f9f100c82/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
   }
 ];
 
@@ -141,13 +195,17 @@ export class VietnamBankingService {
   // Lấy mã ngân hàng cho VietQR
   private getBankCode(bankId: string): string {
     const bankCodes: { [key: string]: string } = {
-      'vietcombank': '970436',
-      'techcombank': '970407',
-      'vietinbank': '970415',
-      'bidv': '970418',
-      'agribank': '970405'
+      'mb': '970422',      // MB Bank
+      'vcb': '970436',     // Vietcombank
+      'tcb': '970407',     // Techcombank
+      'icb': '970415',     // VietinBank
+      'bidv': '970418',    // BIDV
+      'vba': '970405',     // Agribank
+      'acb': '970416',     // ACB
+      'vpb': '970432',     // VPBank
+      'tpb': '970423'      // TPBank
     };
-    return bankCodes[bankId] || '970436';
+    return bankCodes[bankId] || '970422'; // Default to MB Bank
   }
 
   // Mở ứng dụng ngân hàng với deep link
@@ -169,6 +227,16 @@ export class VietnamBankingService {
       const canOpen = await Linking.canOpenURL(deepLink);
       if (canOpen) {
         await Linking.openURL(deepLink);
+        
+        // Thông báo hướng dẫn cho người dùng
+        setTimeout(() => {
+          Alert.alert(
+            `Đã mở ${bankInfo.shortName}`,
+            'Vui lòng chọn "Chuyển khoản" trong app và dán thông tin đã copy ở trên.',
+            [{ text: 'Đã hiểu', style: 'default' }]
+          );
+        }, 1000);
+        
         return true;
       } else {
         // Fallback: Mở app store để tải app
@@ -189,29 +257,40 @@ export class VietnamBankingService {
     }
   }
 
-  // Xây dựng deep link cho từng ngân hàng
+  // Xây dựng deep link cho VietQR
   private buildDeepLink(bankInfo: BankInfo, vndAmount: number, content: string): string {
-    const { id, deepLinkScheme, accountNumber } = bankInfo;
+    const { deepLinkScheme } = bankInfo;
     
-    switch (id) {
-      case 'vietcombank':
-        return `${deepLinkScheme}transfer?account=${accountNumber}&amount=${vndAmount}&content=${encodeURIComponent(content)}`;
+    // Sử dụng VietQR deep link với thông tin đầy đủ
+    if (deepLinkScheme.includes('dl.vietqr.io')) {
+      // Thử nhiều format khác nhau để tìm cách autofill đúng
+      const receiverAccount = RECEIVER_BANK.accountNumber;
+      const bankCode = this.getBankCode('mb');
       
-      case 'techcombank':
-        return `${deepLinkScheme}transfer?beneficiary=${accountNumber}&amount=${vndAmount}&memo=${encodeURIComponent(content)}`;
+      // Format 1: Theo VietQR spec với ba (bank account)
+      const format1 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&ba=${receiverAccount}@${bankCode}&am=${vndAmount}&memo=${encodeURIComponent(content)}`;
       
-      case 'vietinbank':
-        return `${deepLinkScheme}transfer?toAccount=${accountNumber}&amount=${vndAmount}&description=${encodeURIComponent(content)}`;
+      // Format 2: Thử với account number trực tiếp
+      const format2 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&account=${receiverAccount}&bank=${bankCode}&amount=${vndAmount}&content=${encodeURIComponent(content)}`;
       
-      case 'bidv':
-        return `${deepLinkScheme}transfer?receiver=${accountNumber}&money=${vndAmount}&note=${encodeURIComponent(content)}`;
+      // Format 3: Thử với receiver format
+      const format3 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&receiver=${receiverAccount}&receiverBank=${bankCode}&money=${vndAmount}&note=${encodeURIComponent(content)}`;
       
-      case 'agribank':
-        return `${deepLinkScheme}transfer?account=${accountNumber}&amount=${vndAmount}&remark=${encodeURIComponent(content)}`;
+      // Format 4: Thử format đơn giản nhất
+      const format4 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&to=${receiverAccount}&amt=${vndAmount}&msg=${encodeURIComponent(content)}`;
       
-      default:
-        return `${deepLinkScheme}transfer`;
+      console.log('🔗 Trying VietQR formats:');
+      console.log('Format 1 (ba):', format1);
+      console.log('Format 2 (account):', format2);
+      console.log('Format 3 (receiver):', format3);
+      console.log('Format 4 (simple):', format4);
+      
+      // Sử dụng format 1 làm default (theo VietQR spec)
+      return format1;
     }
+    
+    // Fallback cho schemes cũ (nếu có)
+    return `${deepLinkScheme}transfer`;
   }
 
   // Mở App Store/Play Store để tải app ngân hàng
