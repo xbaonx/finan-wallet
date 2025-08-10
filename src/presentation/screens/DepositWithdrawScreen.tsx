@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Image,
   Clipboard,
+  Share,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../core/theme';
@@ -388,6 +390,92 @@ export const DepositWithdrawScreen: React.FC = () => {
     
     Clipboard.setString(accountInfo);
     Alert.alert('Thành công', 'Đã sao chép thông tin tài khoản');
+  };
+
+  // Enhanced copy functions for individual items
+  const handleCopyText = (text: string, label: string) => {
+    Clipboard.setString(text);
+    Alert.alert('Đã sao chép', `${label}: ${text}`);
+  };
+
+  const handleCopyBankAccount = () => {
+    if (!selectedBank) return;
+    handleCopyText(selectedBank.accountNumber, 'Số tài khoản');
+  };
+
+  const handleCopyAccountName = () => {
+    if (!selectedBank) return;
+    handleCopyText(selectedBank.accountName, 'Tên tài khoản');
+  };
+
+  const handleCopyAmount = () => {
+    const amountText = formatVND(vndAmount || 0);
+    handleCopyText(amountText, 'Số tiền');
+  };
+
+  const handleCopyTransferContent = () => {
+    const content = bankingService.generateTransferContent(transactionId, parseFloat(amount));
+    handleCopyText(content, 'Nội dung chuyển khoản');
+  };
+
+  const handleCopyTransactionId = () => {
+    handleCopyText(transactionId, 'Mã giao dịch');
+  };
+
+  // QR Code save functionality
+  const handleSaveQRCode = async () => {
+    try {
+      // For now, we'll show a message about the feature
+      // In a real implementation, you would use react-native-fs and CameraRoll
+      Alert.alert(
+        'Lưu QR Code',
+        'Tính năng lưu QR code vào thư viện ảnh sẽ được cập nhật trong phiên bản tiếp theo.\n\nBạn có thể chụp màn hình để lưu QR code.',
+        [
+          { text: 'Chụp màn hình', onPress: () => {
+            Alert.alert('Hướng dẫn', 'Nhấn nút Home + Power (iPhone) hoặc Power + Volume Down (Android) để chụp màn hình.');
+          }},
+          { text: 'Đóng', style: 'cancel' }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể lưu QR code. Vui lòng thử lại.');
+    }
+  };
+
+  // QR Code share functionality
+  const handleShareQRCode = async () => {
+    try {
+      const shareContent = {
+        title: 'QR Code Chuyển Khoản - Finan Wallet',
+        message: `Thông tin chuyển khoản:\n\n` +
+                `Ngân hàng: ${selectedBank?.shortName}\n` +
+                `Số tài khoản: ${selectedBank?.accountNumber}\n` +
+                `Tên tài khoản: ${selectedBank?.accountName}\n` +
+                `Số tiền: ${formatVND(vndAmount || 0)}\n` +
+                `Nội dung: ${bankingService.generateTransferContent(transactionId, parseFloat(amount))}\n` +
+                `Mã giao dịch: ${transactionId}\n\n` +
+                `QR Code: ${qrCodeUrl}`,
+        url: qrCodeUrl, // QR code URL
+      };
+
+      const result = await Share.share(shareContent);
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // Shared with activity type of result.activityType
+          console.log('Shared with activity type:', result.activityType);
+        } else {
+          // Shared
+          console.log('QR Code shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // Dismissed
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể chia sẻ QR code. Vui lòng thử lại.');
+      console.error('Share error:', error);
+    }
   };
 
   const handleWithdraw = () => {
@@ -784,6 +872,117 @@ export const DepositWithdrawScreen: React.FC = () => {
     buttonLoader: {
       marginRight: 8,
     },
+    // QR Code Section Styles
+    qrCodeSection: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    qrCodeTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    qrCodeWrapper: {
+      backgroundColor: 'white',
+      padding: 16,
+      borderRadius: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+      marginBottom: 16,
+    },
+    qrCodeActions: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 16,
+    },
+    qrActionButton: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 12,
+      alignItems: 'center',
+      minWidth: 80,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    qrActionButtonIcon: {
+      fontSize: 20,
+      marginBottom: 4,
+    },
+    qrActionButtonText: {
+      fontSize: 12,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    // Order Summary Styles
+    orderSummaryCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: '#e3f2fd',
+    },
+    orderSummaryTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 12,
+      textAlign: 'center',
+    },
+    orderSummaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    orderSummaryLabel: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    orderSummaryValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    highlightAmount: {
+      color: '#059669',
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+    copyableText: {
+      color: '#3b82f6',
+      textDecorationLine: 'underline',
+    },
+    // Updated Payment Info Styles
+    copyAllButton: {
+      backgroundColor: '#f0f9ff',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#3b82f6',
+    },
+    copyAllButtonText: {
+      fontSize: 12,
+      color: '#3b82f6',
+      fontWeight: '500',
+    },
+    copyableRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+      backgroundColor: '#f8fafc',
+    },
   });
 
   return (
@@ -926,16 +1125,53 @@ export const DepositWithdrawScreen: React.FC = () => {
           </View>
 
           <ScrollView style={styles.paymentContent} showsVerticalScrollIndicator={false}>
-            {/* QR Code */}
-            <View style={styles.qrCodeContainer}>
-              <Image
-                source={{ uri: qrCodeUrl }}
-                style={styles.qrCodeImage}
-                resizeMode="contain"
-              />
-              <Text style={styles.exchangeRateText}>
-                Quét mã QR để chuyển khoản
-              </Text>
+            {/* QR Code Section */}
+            <View style={styles.qrCodeSection}>
+              <Text style={styles.qrCodeTitle}>Quét mã QR để chuyển khoản</Text>
+              <View style={styles.qrCodeContainer}>
+                <View style={styles.qrCodeWrapper}>
+                  <Image
+                    source={{ uri: qrCodeUrl }}
+                    style={styles.qrCodeImage}
+                    resizeMode="contain"
+                  />
+                </View>
+                <View style={styles.qrCodeActions}>
+                  <TouchableOpacity 
+                    style={styles.qrActionButton}
+                    onPress={handleSaveQRCode}
+                  >
+                    <Text style={styles.qrActionButtonIcon}>💾</Text>
+                    <Text style={styles.qrActionButtonText}>Lưu QR</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.qrActionButton}
+                    onPress={handleShareQRCode}
+                  >
+                    <Text style={styles.qrActionButtonIcon}>📤</Text>
+                    <Text style={styles.qrActionButtonText}>Chia sẻ</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* Order Summary */}
+            <View style={styles.orderSummaryCard}>
+              <Text style={styles.orderSummaryTitle}>Thông tin đơn hàng</Text>
+              <View style={styles.orderSummaryRow}>
+                <Text style={styles.orderSummaryLabel}>Số tiền nạp:</Text>
+                <Text style={styles.orderSummaryValue}>{formatCrypto(parseFloat(amount), 'USDT', 2)}</Text>
+              </View>
+              <View style={styles.orderSummaryRow}>
+                <Text style={styles.orderSummaryLabel}>Số tiền chuyển:</Text>
+                <Text style={[styles.orderSummaryValue, styles.highlightAmount]}>{formatVND(vndAmount || 0)}</Text>
+              </View>
+              <View style={styles.orderSummaryRow}>
+                <Text style={styles.orderSummaryLabel}>Mã giao dịch:</Text>
+                <TouchableOpacity onPress={handleCopyTransactionId}>
+                  <Text style={[styles.orderSummaryValue, styles.copyableText]}>{transactionId} 📋</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Payment Information */}
@@ -944,13 +1180,13 @@ export const DepositWithdrawScreen: React.FC = () => {
                 style={styles.paymentInfoHeader}
                 onPress={() => setShowPaymentInfo(!showPaymentInfo)}
               >
-                <Text style={styles.paymentInfoTitle}>Thông tin chuyển khoản</Text>
+                <Text style={styles.paymentInfoTitle}>Chi tiết chuyển khoản</Text>
                 <View style={styles.headerActions}>
                   <TouchableOpacity
-                    style={styles.copyIconButton}
+                    style={styles.copyAllButton}
                     onPress={handleCopyAccountInfo}
                   >
-                    <Text style={styles.copyIcon}>📋</Text>
+                    <Text style={styles.copyAllButtonText}>📋 Sao chép tất cả</Text>
                   </TouchableOpacity>
                   <Text style={styles.dropdownIcon}>
                     {showPaymentInfo ? '▲' : '▼'}
@@ -964,30 +1200,38 @@ export const DepositWithdrawScreen: React.FC = () => {
                     <Text style={styles.paymentInfoLabel}>Ngân hàng:</Text>
                     <Text style={styles.paymentInfoValue}>{selectedBank.shortName}</Text>
                   </View>
-                  <View style={styles.paymentInfoRow}>
+                  <TouchableOpacity 
+                    style={styles.copyableRow}
+                    onPress={handleCopyBankAccount}
+                  >
                     <Text style={styles.paymentInfoLabel}>Số tài khoản:</Text>
-                    <Text style={styles.paymentInfoValue}>{selectedBank.accountNumber}</Text>
-                  </View>
-                  <View style={styles.paymentInfoRow}>
+                    <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountNumber} 📋</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.copyableRow}
+                    onPress={handleCopyAccountName}
+                  >
                     <Text style={styles.paymentInfoLabel}>Tên tài khoản:</Text>
-                    <Text style={styles.paymentInfoValue}>{selectedBank.accountName}</Text>
-                  </View>
-                  <View style={styles.paymentInfoRow}>
+                    <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountName} 📋</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.copyableRow}
+                    onPress={handleCopyAmount}
+                  >
                     <Text style={styles.paymentInfoLabel}>Số tiền:</Text>
-                    <Text style={[styles.paymentInfoValue, { color: '#059669', fontWeight: 'bold' }]}>
-                      {formatVND(vndAmount || 0)}
+                    <Text style={[styles.paymentInfoValue, styles.highlightAmount]}>
+                      {formatVND(vndAmount || 0)} 📋
                     </Text>
-                  </View>
-                  <View style={styles.paymentInfoRow}>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.copyableRow}
+                    onPress={handleCopyTransferContent}
+                  >
                     <Text style={styles.paymentInfoLabel}>Nội dung:</Text>
-                    <Text style={styles.paymentInfoValue}>
-                      {bankingService.generateTransferContent(transactionId, parseFloat(amount))}
+                    <Text style={[styles.paymentInfoValue, styles.copyableText]}>
+                      {bankingService.generateTransferContent(transactionId, parseFloat(amount))} 📋
                     </Text>
-                  </View>
-                  <View style={styles.paymentInfoRow}>
-                    <Text style={styles.paymentInfoLabel}>Mã giao dịch:</Text>
-                    <Text style={styles.paymentInfoValue}>{transactionId}</Text>
-                  </View>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
