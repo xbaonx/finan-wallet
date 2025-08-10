@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -24,10 +24,14 @@ import { finanBackendService, ExchangeRates, ExchangeRatesResponse, DepositOrder
 import { GetCurrentWalletUseCase } from '../../domain/usecases/dashboard_usecases';
 import { formatVND, formatUSD, formatCrypto, formatExchangeRate } from '../../core/utils/number_formatter';
 import { handleInputChange, sanitizeForAPI, parseInputValue } from '../../core/utils/simple_input_formatter';
+import ViewShot from 'react-native-view-shot';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 
 export const DepositWithdrawScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const viewShotRef = useRef<ViewShot>(null);
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
   const [displayAmount, setDisplayAmount] = useState('');
@@ -425,53 +429,131 @@ export const DepositWithdrawScreen: React.FC = () => {
   // QR Code save functionality
   const handleSaveQRCode = async () => {
     try {
-      // For now, we'll show a message about the feature
-      // In a real implementation, you would use react-native-fs and CameraRoll
-      Alert.alert(
-        'Lưu QR Code',
-        'Tính năng lưu QR code vào thư viện ảnh sẽ được cập nhật trong phiên bản tiếp theo.\n\nBạn có thể chụp màn hình để lưu QR code.',
-        [
-          { text: 'Chụp màn hình', onPress: () => {
-            Alert.alert('Hướng dẫn', 'Nhấn nút Home + Power (iPhone) hoặc Power + Volume Down (Android) để chụp màn hình.');
-          }},
-          { text: 'Đóng', style: 'cancel' }
-        ]
-      );
+      // Kiểm tra quyền truy cập thư viện ảnh
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Cần quyền truy cập',
+          'Vui lòng cấp quyền truy cập thư viện ảnh để lưu QR code.',
+          [{ text: 'Đã hiểu' }]
+        );
+        return;
+      }
+
+      // Hiển thị loading
+      const loadingAlertId = setTimeout(() => {
+        Alert.alert(
+          'Đang lưu QR Code',
+          'Đang xử lý...',
+          [],
+          { cancelable: false }
+        );
+      }, 100);
+
+      // Chụp ảnh QR code bằng ViewShot
+      if (viewShotRef.current && viewShotRef.current.capture) {
+        const uri = await viewShotRef.current.capture();
+        
+        // Lưu ảnh vào thư viện ảnh
+        const asset = await MediaLibrary.createAssetAsync(uri);
+        await MediaLibrary.createAlbumAsync('Finan Wallet', asset, false);
+        
+        // Xóa alert loading và hiển thị thông báo thành công
+        clearTimeout(loadingAlertId);
+        Alert.alert(
+          'Thành công',
+          'QR code đã được lưu vào thư viện ảnh của bạn.',
+          [
+            { text: 'Chia sẻ QR Code', onPress: handleShareQRCode },
+            { text: 'Đóng', style: 'default' }
+          ]
+        );
+      } else {
+        clearTimeout(loadingAlertId);
+        Alert.alert('Lỗi', 'Không thể chụp QR code. Vui lòng thử lại.');
+      }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể lưu QR code. Vui lòng thử lại.');
+      console.error('Lỗi khi lưu QR code:', error);
+      Alert.alert(
+        'Lỗi',
+        'Không thể lưu QR code. Vui lòng thử lại sau.',
+        [{ text: 'Chụp màn hình thay thế', onPress: showScreenshotInstructions }]
+      );
+    }
+  };
+  
+  // Hiển thị hướng dẫn chụp màn hình (fallback)
+  const showScreenshotInstructions = () => {
+    if (Platform.OS === 'ios') {
+      Alert.alert(
+        'Hướng dẫn chụp màn hình (iOS)',
+        'iPhone có Face ID: Nhấn nút nguồn + tăng âm lượng cùng lúc\n\n' +
+        'iPhone có nút Home: Nhấn nút nguồn + nút Home cùng lúc\n\n' +
+        'Ảnh chụp màn hình sẽ được lưu vào thư viện ảnh của bạn.',
+        [{ text: 'Đã hiểu' }]
+      );
+    } else {
+      Alert.alert(
+        'Hướng dẫn chụp màn hình (Android)',
+        'Nhấn giữ nút nguồn + giảm âm lượng cùng lúc trong 1-2 giây\n\n' +
+        'Một số máy: Vuốt 3 ngón tay từ trên xuống dưới màn hình\n\n' +
+        'Ảnh chụp màn hình sẽ được lưu vào thư viện ảnh của bạn.',
+        [{ text: 'Đã hiểu' }]
+      );
     }
   };
 
   // QR Code share functionality
   const handleShareQRCode = async () => {
     try {
+      // Tạo nội dung chia sẻ với định dạng rõ ràng và dễ đọc
+      const transferContent = bankingService.generateTransferContent(transactionId, parseFloat(amount));
+      
       const shareContent = {
-        title: 'QR Code Chuyển Khoản - Finan Wallet',
-        message: `Thông tin chuyển khoản:\n\n` +
-                `Ngân hàng: ${selectedBank?.shortName}\n` +
-                `Số tài khoản: ${selectedBank?.accountNumber}\n` +
-                `Tên tài khoản: ${selectedBank?.accountName}\n` +
-                `Số tiền: ${formatVND(vndAmount || 0)}\n` +
-                `Nội dung: ${bankingService.generateTransferContent(transactionId, parseFloat(amount))}\n` +
-                `Mã giao dịch: ${transactionId}\n\n` +
-                `QR Code: ${qrCodeUrl}`,
+        title: 'Thông tin chuyển khoản - Finan Wallet',
+        message: `✨ THÔNG TIN CHUYỂN KHOẢN ✨\n\n` +
+                `• Ngân hàng: ${selectedBank?.shortName}\n` +
+                `• Số tài khoản: ${selectedBank?.accountNumber}\n` +
+                `• Tên tài khoản: ${selectedBank?.accountName}\n` +
+                `• Số tiền: ${formatVND(vndAmount || 0)}\n` +
+                `• Nội dung chuyển khoản: ${transferContent}\n\n` +
+                `💳 Số tiền nạp: ${formatCrypto(parseFloat(amount), 'USDT', 2)}\n` +
+                `🔑 Mã giao dịch: ${transactionId}\n\n` +
+                `📷 Quét mã QR hoặc truy cập: ${qrCodeUrl}\n\n` +
+                `👉 Sau khi chuyển khoản, USDT sẽ được cộng vào ví của bạn trong vòng 5-15 phút.`,
         url: qrCodeUrl, // QR code URL
       };
 
-      const result = await Share.share(shareContent);
-      
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          // Shared with activity type of result.activityType
-          console.log('Shared with activity type:', result.activityType);
-        } else {
-          // Shared
-          console.log('QR Code shared successfully');
-        }
-      } else if (result.action === Share.dismissedAction) {
-        // Dismissed
-        console.log('Share dismissed');
-      }
+      // Hiển thị hộp thoại xác nhận trước khi chia sẻ
+      Alert.alert(
+        'Chia sẻ thông tin chuyển khoản',
+        'Bạn có muốn chia sẻ thông tin chuyển khoản và mã QR?',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { 
+            text: 'Chia sẻ', 
+            onPress: async () => {
+              try {
+                const result = await Share.share(shareContent);
+                
+                if (result.action === Share.sharedAction) {
+                  if (result.activityType) {
+                    console.log('Shared with activity type:', result.activityType);
+                  } else {
+                    console.log('QR Code shared successfully');
+                    // Thông báo thành công (tùy chọn)
+                    // Alert.alert('Thành công', 'Thông tin chuyển khoản đã được chia sẻ');
+                  }
+                }
+              } catch (error) {
+                console.error('Share error:', error);
+                Alert.alert('Lỗi', 'Không thể chia sẻ thông tin. Vui lòng thử lại.');
+              }
+            } 
+          }
+        ]
+      );
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể chia sẻ QR code. Vui lòng thử lại.');
       console.error('Share error:', error);
@@ -735,6 +817,16 @@ export const DepositWithdrawScreen: React.FC = () => {
     qrCodeContainer: {
       alignItems: 'center',
       marginBottom: 24,
+    },
+    qrCode: {
+      width: '100%',
+      height: 200,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+      backgroundColor: '#fff',
+      borderRadius: 8,
+      padding: 8,
     },
     qrCodeImage: {
       width: 200,
@@ -1128,30 +1220,36 @@ export const DepositWithdrawScreen: React.FC = () => {
             {/* QR Code Section */}
             <View style={styles.qrCodeSection}>
               <Text style={styles.qrCodeTitle}>Quét mã QR để chuyển khoản</Text>
-              <View style={styles.qrCodeContainer}>
-                <View style={styles.qrCodeWrapper}>
+              <ViewShot
+                ref={viewShotRef}
+                options={{ format: 'png', quality: 0.9 }}
+                style={styles.qrCodeContainer}
+              >
+                {qrCodeUrl ? (
                   <Image
                     source={{ uri: qrCodeUrl }}
-                    style={styles.qrCodeImage}
+                    style={styles.qrCode}
                     resizeMode="contain"
                   />
-                </View>
-                <View style={styles.qrCodeActions}>
-                  <TouchableOpacity 
-                    style={styles.qrActionButton}
-                    onPress={handleSaveQRCode}
-                  >
-                    <Text style={styles.qrActionButtonIcon}>💾</Text>
-                    <Text style={styles.qrActionButtonText}>Lưu QR</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.qrActionButton}
-                    onPress={handleShareQRCode}
-                  >
-                    <Text style={styles.qrActionButtonIcon}>📤</Text>
-                    <Text style={styles.qrActionButtonText}>Chia sẻ</Text>
-                  </TouchableOpacity>
-                </View>
+                ) : (
+                  <ActivityIndicator size="large" color="#0000ff" />
+                )}
+              </ViewShot>
+              <View style={styles.qrCodeActions}>
+                <TouchableOpacity 
+                  style={styles.qrActionButton}
+                  onPress={handleSaveQRCode}
+                >
+                  <Text style={styles.qrActionButtonIcon}>💾</Text>
+                  <Text style={styles.qrActionButtonText}>Lưu QR</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.qrActionButton}
+                  onPress={handleShareQRCode}
+                >
+                  <Text style={styles.qrActionButtonIcon}>📤</Text>
+                  <Text style={styles.qrActionButtonText}>Chia sẻ</Text>
+                </TouchableOpacity>
               </View>
             </View>
 
