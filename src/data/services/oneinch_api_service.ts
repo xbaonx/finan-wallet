@@ -181,11 +181,22 @@ export class OneInchApiService {
     }
   }
 
-  async getSwapQuote(request: SwapRequest): Promise<SwapQuote> {
+  async getSwapQuote(request: SwapRequest, platformFeePercentage?: number): Promise<SwapQuote> {
     try {
       // Convert amount to wei if needed
       const fromAmountWei = this.convertToWei(request.fromAmount, request.fromToken.decimals);
       
+      // Tính toán phí để gửi cho 1inch API
+      const feeForOneInch = platformFeePercentage !== undefined ? (platformFeePercentage * 100) : API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE;
+      
+      console.log('💰 Debug phí nền tảng (Quote) - CHI TIẾT:');
+      console.log('   - platformFeePercentage:', platformFeePercentage);
+      console.log('   - platformFeePercentage !== undefined:', platformFeePercentage !== undefined);
+      console.log('   - platformFeePercentage * 100:', platformFeePercentage ? platformFeePercentage * 100 : 'N/A');
+      console.log('   - API_CONFIG fallback:', API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE);
+      console.log('   - feeForOneInch (final):', feeForOneInch);
+      console.log('   - referrerAddress:', API_CONFIG.ONEINCH.REFERRER.ADDRESS);
+
       const params = {
         src: request.fromToken.address,
         dst: request.toToken.address,
@@ -193,9 +204,9 @@ export class OneInchApiService {
         includeTokensInfo: 'true',
         includeProtocols: 'true',
         includeGas: 'true',
-        // Referrer fee parameters
+        // Referrer fee parameters - sử dụng phí động từ backend
         referrer: API_CONFIG.ONEINCH.REFERRER.ADDRESS,
-        fee: API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE.toString(),
+        fee: feeForOneInch.toString(),
       };
 
       // Sử dụng endpoint từ config
@@ -296,7 +307,7 @@ export class OneInchApiService {
     }
   }
 
-  async buildSwapTransaction(swapRequest: SwapRequest): Promise<SwapTransaction> {
+  async buildSwapTransaction(swapRequest: SwapRequest, platformFeePercentage?: number): Promise<SwapTransaction> {
     const { fromToken, toToken, fromAmount, fromAddress, slippage } = swapRequest;
     
     console.log('🔄 Building swap transaction with params:', {
@@ -337,22 +348,33 @@ export class OneInchApiService {
 
     // Sử dụng API swap tiêu chuẩn của 1inch
     try {
-      // Tham số cho 1inch Swap API
+      // Tính toán phí để gửi cho 1inch API
+      const feeForOneInch = platformFeePercentage !== undefined ? (platformFeePercentage * 100) : API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE;
+      
+      console.log('💰 Debug phí nền tảng (Swap) - CHI TIẾT:');
+      console.log('   - platformFeePercentage:', platformFeePercentage);
+      console.log('   - platformFeePercentage !== undefined:', platformFeePercentage !== undefined);
+      console.log('   - platformFeePercentage * 100:', platformFeePercentage ? platformFeePercentage * 100 : 'N/A');
+      console.log('   - API_CONFIG fallback:', API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE);
+      console.log('   - feeForOneInch (final):', feeForOneInch);
+      console.log('   - referrerAddress:', API_CONFIG.ONEINCH.REFERRER.ADDRESS);
+      console.log('   - amountWei gửi cho 1inch:', amountWei);
+      console.log('   - Dự kiến phí (gross):', `${(parseFloat(fromAmount) * (feeForOneInch / 100)).toFixed(6)} ${fromToken.symbol}`);
+
       const standardSwapParams = {
         src: fromToken.address,
         dst: toToken.address,
         amount: amountWei,
         from: fromAddress,
         slippage: slippage.toString(),
-        // Các tham số thêm theo tài liệu 1inch API v6.0
-        receiver: fromAddress, // địa chỉ nhận token, mặc định là người gửi
         disableEstimate: 'false',
+        allowPartialFill: 'false',
         includeTokensInfo: 'true',
         includeProtocols: 'true',
         includeGas: 'true',
-        // Referrer fee parameters
+        // Referrer fee parameters - sử dụng phí động từ backend
         referrer: API_CONFIG.ONEINCH.REFERRER.ADDRESS,
-        fee: API_CONFIG.ONEINCH.REFERRER.FEE_PERCENTAGE.toString(),
+        fee: feeForOneInch.toString(),
       };
       
       const endpoint = this.endpoints.SWAP.replace('{chainId}', this.chainId.toString());
@@ -374,7 +396,9 @@ export class OneInchApiService {
         data: response.tx.data,
         value: response.tx.value || '0',
         gas: response.tx.gas || '600000', // Đảm bảo gas limit đủ cho swap (thường cao hơn approve)
-        gasPrice: recommendedGasTipCap // Gán gas tip cap cao hơn mức tối thiểu yêu cầu (100000000)
+        gasPrice: recommendedGasTipCap, // Gán gas tip cap cao hơn mức tối thiểu yêu cầu (100000000)
+        fromAmount: fromAmount, // Thêm để tracking trong SwapResult
+        toAmount: response.dstAmount ? this.convertFromWei(response.dstAmount, toToken.decimals) : '0' // Lấy từ 1inch dstAmount
       };
     } catch (error) {
       console.error('❌ Error building swap transaction:', error);

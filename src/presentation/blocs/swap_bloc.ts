@@ -32,6 +32,7 @@ export class SwapBloc {
   private currentQuote: any = null;
   private needsApproval: boolean = false;
   private allowanceAmount: string = '0';
+  private platformFeePercentage: number | undefined = undefined;
 
   // USDT token info (default for swaps)
   private readonly USDT_TOKEN: TokenInfo = {
@@ -63,6 +64,12 @@ export class SwapBloc {
 
   removeListener(listener: (state: SwapState) => void): void {
     this.listeners = this.listeners.filter(l => l !== listener);
+  }
+
+  // Method để set platform fee percentage từ SwapScreen
+  setPlatformFeePercentage(feePercentage: number | undefined): void {
+    this.platformFeePercentage = feePercentage;
+    console.log('🔧 SwapBloc: Set platformFeePercentage =', feePercentage);
   }
 
   private emit(state: SwapState): void {
@@ -371,7 +378,7 @@ export class SwapBloc {
         amount: event.request.fromAmount
       });
       
-      const quote = await this.getSwapQuoteUseCase.execute(event.request);
+      const quote = await this.getSwapQuoteUseCase.execute(event.request, this.platformFeePercentage);
       this.currentQuote = quote;
       this.toAmount = quote.toAmount;
       
@@ -532,7 +539,7 @@ export class SwapBloc {
             fromAmount: this.fromAmount,
             fromAddress: event.ownerAddress,
             slippage: 1
-          });
+          }, this.platformFeePercentage);
           
           // Cập nhật quote mới
           this.currentQuote = quote;
@@ -591,7 +598,7 @@ export class SwapBloc {
         to: `${this.toAmount} ${toToken.symbol}`
       });
       
-      const result = await this.performSwapUseCase.execute(event.request, privateKey);
+      const result = await this.performSwapUseCase.execute(event.request, privateKey, this.platformFeePercentage);
       console.log('✅ Swap thành công:', result);
 
       // 4. Thông báo swap thành công

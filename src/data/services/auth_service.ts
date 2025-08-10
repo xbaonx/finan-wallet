@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { SafeSecureStore } from '../../core/utils/safe_secure_store';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 export interface BiometricInfo {
@@ -39,7 +40,7 @@ export class AuthService {
    */
   async hasPinSet(): Promise<boolean> {
     try {
-      const pin = await SecureStore.getItemAsync(AuthService.PIN_KEY);
+      const pin = await SafeSecureStore.getItemAsync(AuthService.PIN_KEY);
       return pin !== null;
     } catch (error) {
       console.error('Check PIN exists error:', error);
@@ -52,7 +53,7 @@ export class AuthService {
    */
   async verifyPin(inputPin: string): Promise<AuthResult> {
     try {
-      const storedPin = await SecureStore.getItemAsync(AuthService.PIN_KEY);
+      const storedPin = await SafeSecureStore.getItemAsync(AuthService.PIN_KEY);
       
       if (!storedPin) {
         return { success: false, error: 'Mã PIN chưa được thiết lập' };
@@ -106,7 +107,7 @@ export class AuthService {
    */
   async isBiometricEnabled(): Promise<boolean> {
     try {
-      const enabled = await SecureStore.getItemAsync(AuthService.BIOMETRIC_KEY);
+      const enabled = await SafeSecureStore.getItemAsync(AuthService.BIOMETRIC_KEY);
       return enabled === 'true';
     } catch (error) {
       console.error('Check biometric enabled error:', error);
@@ -132,7 +133,7 @@ export class AuthService {
    */
   async getPinLength(): Promise<4 | 6> {
     try {
-      const length = await SecureStore.getItemAsync(AuthService.PIN_LENGTH_KEY);
+      const length = await SafeSecureStore.getItemAsync(AuthService.PIN_LENGTH_KEY);
       return length === '4' ? 4 : 6; // Mặc định 6 nếu chưa thiết lập
     } catch (error) {
       console.error('Get PIN length error:', error);
@@ -254,7 +255,7 @@ export class AuthService {
    */
   private async getFailedAttempts(): Promise<number> {
     try {
-      const attempts = await SecureStore.getItemAsync(AuthService.FAILED_ATTEMPTS_KEY);
+      const attempts = await SafeSecureStore.getItemAsync(AuthService.FAILED_ATTEMPTS_KEY);
       return attempts ? parseInt(attempts, 10) : 0;
     } catch (error) {
       console.error('Get failed attempts error:', error);

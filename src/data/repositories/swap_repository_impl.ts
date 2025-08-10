@@ -146,13 +146,12 @@ export class SwapRepositoryImpl implements SwapRepository {
     };
   }
 
-  async getSwapQuote(request: SwapRequest): Promise<SwapQuote> {
+  async getSwapQuote(request: SwapRequest, platformFeePercentage?: number): Promise<SwapQuote> {
     try {
-      return await this.oneInchService.getSwapQuote(request);
+      return await this.oneInchService.getSwapQuote(request, platformFeePercentage);
     } catch (error) {
       console.error('❌ Error getting swap quote:', error);
-      // Return fallback quote
-      return this.calculateFallbackQuote(request);
+      throw error;
     }
   }
 
@@ -174,8 +173,8 @@ export class SwapRepositoryImpl implements SwapRepository {
     };
   }
 
-  async buildSwapTransaction(request: SwapRequest): Promise<SwapTransaction> {
-    return await this.oneInchService.buildSwapTransaction(request);
+  async buildSwapTransaction(request: SwapRequest, platformFeePercentage?: number): Promise<SwapTransaction> {
+    return await this.oneInchService.buildSwapTransaction(request, platformFeePercentage);
   }
 
   async executeSwap(transaction: SwapTransaction, privateKey: string): Promise<SwapResult> {
@@ -196,8 +195,8 @@ export class SwapRepositoryImpl implements SwapRepository {
       
       return {
         transactionHash: sentTx.hash,
-        fromAmount: transaction.fromAmount,
-        toAmount: transaction.toAmount,
+        fromAmount: transaction.fromAmount || '0',
+        toAmount: transaction.toAmount || '0',
         gasUsed: receipt?.gasUsed.toString() || '0',
         gasPrice: transaction.gasPrice,
         status: 'success',

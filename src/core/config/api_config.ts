@@ -30,7 +30,7 @@ export const API_CONFIG = {
     // Referrer Fee Configuration
     REFERRER: {
       ADDRESS: '0x62EC88A97156233cdB416024AC5011C5B9A6f361', // Binance BSC wallet để nhận fee
-      FEE_PERCENTAGE: 0.7, // 0.7% fee (trong range 0-3% của 1inch)
+      FEE_PERCENTAGE: 0.9, // 0.9% fee (cập nhật từ backend, trong range 0-3% của 1inch)
     }
   },
 
@@ -41,6 +41,26 @@ export const API_CONFIG = {
       PRICE: '/ticker/price',
       PRICE_24HR: '/ticker/24hr',
       PRICES_BATCH: '/ticker/price'
+    }
+  },
+
+  // Finan Wallet Backend Configuration
+  FINAN_BACKEND: {
+    BASE_URL: 'https://finan-backend-vn.onrender.com/api/v1',
+    ENDPOINTS: {
+      // Deposit/Withdraw endpoints
+      CREATE_DEPOSIT_ORDER: '/deposit-withdraw/deposit',
+      CREATE_WITHDRAW_ORDER: '/deposit-withdraw/withdraw',
+      GET_ORDERS: '/deposit-withdraw/orders',
+      GET_ORDER_BY_ID: '/deposit-withdraw/orders/{orderId}',
+      GET_EXCHANGE_RATES: '/deposit-withdraw/rates',
+      GET_DEPOSIT_STATS: '/deposit-withdraw/stats',
+      
+      // Swap endpoints
+      GET_SWAP_CONFIG: '/swap/config',
+      CALCULATE_SWAP_FEE: '/swap/calculate-fee',
+      VALIDATE_SWAP: '/swap/validate',
+      GET_SUPPORTED_TOKENS: '/swap/tokens'
     }
   },
 

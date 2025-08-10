@@ -28,7 +28,7 @@ export class GetTokenPriceUseCase {
 export class GetSwapQuoteUseCase {
   constructor(private swapRepository: SwapRepository) {}
 
-  async execute(request: SwapRequest): Promise<SwapQuote> {
+  async execute(request: SwapRequest, platformFeePercentage?: number): Promise<SwapQuote> {
     // Validate request
     if (!request.fromToken || !request.toToken) {
       throw new Error('Tokens không hợp lệ');
@@ -42,7 +42,7 @@ export class GetSwapQuoteUseCase {
       throw new Error('Không thể swap cùng một token');
     }
 
-    return await this.swapRepository.getSwapQuote(request);
+    return await this.swapRepository.getSwapQuote(request, platformFeePercentage);
   }
 }
 
@@ -78,7 +78,7 @@ export class ApproveTokenUseCase {
 export class PerformSwapUseCase {
   constructor(private swapRepository: SwapRepository) {}
 
-  async execute(request: SwapRequest, privateKey: string): Promise<SwapResult> {
+  async execute(request: SwapRequest, privateKey: string, platformFeePercentage?: number): Promise<SwapResult> {
     // Validate request
     if (!request.fromToken || !request.toToken) {
       throw new Error('Tokens không hợp lệ');
@@ -93,7 +93,7 @@ export class PerformSwapUseCase {
     }
 
     // Build transaction
-    const transaction = await this.swapRepository.buildSwapTransaction(request);
+    const transaction = await this.swapRepository.buildSwapTransaction(request, platformFeePercentage);
     
     // Execute swap
     return await this.swapRepository.executeSwap(transaction, privateKey);

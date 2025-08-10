@@ -23,6 +23,7 @@ import { DashboardState, DashboardLoading, DashboardLoaded, DashboardRefreshing,
 import { ServiceLocator } from '../../core/di/service_locator';
 
 import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
+import { formatUSD, formatCrypto, formatLargeNumber } from '../../core/utils/number_formatter';
 import { TokenEntity } from '../../domain/entities/token_entity';
 
 type DashboardScreenNavigationProp = CompositeNavigationProp<
@@ -197,7 +198,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                   fontWeight: '500',
                   marginLeft: 8,
                 }}>
-                  {formatTokenBalance(token.balance, token.symbol)} {token.symbol}
+                  {formatCrypto(parseFloat(token.balance), token.symbol, 4)}
                 </Text>
               )}
             </View>
@@ -211,7 +212,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             fontWeight: '600',
             color: colors.text,
           }}>
-            {token.priceUSD > 0 ? formatCurrency(tokenValue) : 'N/A'}
+            {token.priceUSD > 0 ? formatUSD(tokenValue) : 'N/A'}
           </Text>
         </View>
       </View>
@@ -274,10 +275,10 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         <View style={[styles.balanceCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Tổng số dư</Text>
           <Text style={[styles.balanceAmount, { color: colors.text }]}>
-            {balance ? formatCurrency(balance.totalBalanceUSD) : '$0.00'}
+            {balance ? formatUSD(balance.totalBalanceUSD) : '$0,00'}
           </Text>
           <Text style={[styles.balanceSubtext, { color: colors.textTertiary }]}>
-            {balance ? `${balance.tokens.length} token` : '0 token'}
+            {balance ? `${formatLargeNumber(balance.tokens.length, 0)} token` : '0 token'}
           </Text>
         </View>
 

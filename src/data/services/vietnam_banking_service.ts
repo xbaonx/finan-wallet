@@ -14,6 +14,7 @@ export interface BankInfo {
   deepLinkScheme: string;
   logo: string;
   logoUrl?: string; // URL logo thật
+  autofill?: number; // 1 = hỗ trợ autofill, 0 = không hỗ trợ
 }
 
 // Tài khoản nhận tiền (cố định)
@@ -26,7 +27,8 @@ export const RECEIVER_BANK: BankInfo = {
   qrPrefix: 'https://img.vietqr.io/image/970422-0550100078888-compact2.png',
   deepLinkScheme: 'https://dl.vietqr.io/pay?app=mb',
   logo: '🏦',
-  logoUrl: 'https://is2-ssl.mzstatic.com/image/thumb/Purple122/v4/f4/0a/b6/f40ab6a2-e67d-e267-9c46-ae03dfa238a9/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
+  logoUrl: 'https://is2-ssl.mzstatic.com/image/thumb/Purple122/v4/f4/0a/b6/f40ab6a2-e67d-e267-9c46-ae03dfa238a9/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png',
+  autofill: 0
 };
 
 // Danh sách ngân hàng để người dùng chọn mở app
@@ -41,7 +43,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=vcb',
     logo: '🏛️',
-    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple122/v4/c6/c9/ed/c6c9ed04-11f8-7269-fcc3-9609126682c0/AppIcon-1x_U007emarketing-0-7-0-0-85-220.png/1200x630wa.png'
+    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple122/v4/c6/c9/ed/c6c9ed04-11f8-7269-fcc3-9609126682c0/AppIcon-1x_U007emarketing-0-7-0-0-85-220.png/1200x630wa.png',
+    autofill: 0
   },
   {
     id: 'tcb',
@@ -52,7 +55,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=tcb',
     logo: '🏪',
-    logoUrl: 'https://is5-ssl.mzstatic.com/image/thumb/Purple122/v4/b2/b4/d1/b2b4d153-ed9f-aab6-996c-205c583c1339/AppIcon-0-0-1x_U007emarketing-0-0-0-10-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
+    logoUrl: 'https://is5-ssl.mzstatic.com/image/thumb/Purple122/v4/b2/b4/d1/b2b4d153-ed9f-aab6-996c-205c583c1339/AppIcon-0-0-1x_U007emarketing-0-0-0-10-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png',
+    autofill: 0
   },
   {
     id: 'icb',
@@ -63,7 +67,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=icb',
     logo: '🏢',
-    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple112/v4/14/04/b8/1404b8f4-a91f-f8bf-7af5-1a0e59bbdf19/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
+    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple112/v4/14/04/b8/1404b8f4-a91f-f8bf-7af5-1a0e59bbdf19/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png',
+    autofill: 0
   },
   {
     id: 'bidv',
@@ -74,7 +79,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=bidv',
     logo: '🏨',
-    logoUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Purple112/v4/88/1b/e6/881be6df-e9b6-8b66-e0fb-2499ac874734/AppIcon-1x_U007emarketing-0-6-0-0-85-220.png/1200x630wa.png'
+    logoUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Purple112/v4/88/1b/e6/881be6df-e9b6-8b66-e0fb-2499ac874734/AppIcon-1x_U007emarketing-0-6-0-0-85-220.png/1200x630wa.png',
+    autofill: 0
   },
   {
     id: 'vba',
@@ -85,7 +91,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=vba',
     logo: '🌾',
-    logoUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Purple112/v4/a6/7e/98/a67e98e6-20c2-5f96-c364-f79a9fe03819/AppIcon-1x_U007emarketing-0-5-0-0-85-220.png/1200x630wa.png'
+    logoUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Purple112/v4/a6/7e/98/a67e98e6-20c2-5f96-c364-f79a9fe03819/AppIcon-1x_U007emarketing-0-5-0-0-85-220.png/1200x630wa.png',
+    autofill: 0
   },
   {
     id: 'acb',
@@ -96,7 +103,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=acb',
     logo: '🏪',
-    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple122/v4/a1/ae/1e/a1ae1e68-2d58-92bc-9ec5-42917a59f767/AppIcon-1x_U007emarketing-0-7-0-0-85-220.png/1200x630wa.png'
+    logoUrl: 'https://is4-ssl.mzstatic.com/image/thumb/Purple122/v4/a1/ae/1e/a1ae1e68-2d58-92bc-9ec5-42917a59f767/AppIcon-1x_U007emarketing-0-7-0-0-85-220.png/1200x630wa.png',
+    autofill: 1
   },
   {
     id: 'vpb',
@@ -107,7 +115,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=vpb',
     logo: '🏦',
-    logoUrl: 'https://is3-ssl.mzstatic.com/image/thumb/Purple122/v4/0f/45/e5/0f45e506-590d-860d-8a0f-61c460d8b6dd/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
+    logoUrl: 'https://is3-ssl.mzstatic.com/image/thumb/Purple122/v4/0f/45/e5/0f45e506-590d-860d-8a0f-61c460d8b6dd/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png',
+    autofill: 0
   },
   {
     id: 'tpb',
@@ -118,7 +127,8 @@ export const VIETNAM_BANKS: BankInfo[] = [
     qrPrefix: '',
     deepLinkScheme: 'https://dl.vietqr.io/pay?app=tpb',
     logo: '🏛️',
-    logoUrl: 'https://is3-ssl.mzstatic.com/image/thumb/Purple122/v4/c3/31/46/c3314678-be31-dda0-621b-ff8f9f100c82/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png'
+    logoUrl: 'https://is3-ssl.mzstatic.com/image/thumb/Purple122/v4/c3/31/46/c3314678-be31-dda0-621b-ff8f9f100c82/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png',
+    autofill: 0
   }
 ];
 
@@ -228,14 +238,22 @@ export class VietnamBankingService {
       if (canOpen) {
         await Linking.openURL(deepLink);
         
-        // Thông báo hướng dẫn cho người dùng
+        // Thông báo hướng dẫn cho người dùng dựa trên tính năng autofill
         setTimeout(() => {
+          const autofillMessage = bankInfo.autofill === 1 
+            ? `${bankInfo.shortName} có thể tự động điền một số thông tin. Vui lòng kiểm tra và hoàn tất giao dịch.`
+            : `Vui lòng nhập thủ công thông tin chuyển khoản trong ${bankInfo.shortName}.`;
+            
           Alert.alert(
             `Đã mở ${bankInfo.shortName}`,
-            'Vui lòng chọn "Chuyển khoản" trong app và dán thông tin đã copy ở trên.',
+            `${autofillMessage}\n\n` +
+            `📱 STK: ${RECEIVER_BANK.accountNumber}\n` +
+            `👤 Tên: ${RECEIVER_BANK.accountName}\n` +
+            `💰 Số tiền: ${vndAmount.toLocaleString('vi-VN')} VND\n` +
+            `📝 Nội dung: ${content}`,
             [{ text: 'Đã hiểu', style: 'default' }]
           );
-        }, 1000);
+        }, 1500);
         
         return true;
       } else {
@@ -257,40 +275,28 @@ export class VietnamBankingService {
     }
   }
 
-  // Xây dựng deep link cho VietQR
+  // Xây dựng deep link cho ngân hàng sử dụng VietQR chính thức
   private buildDeepLink(bankInfo: BankInfo, vndAmount: number, content: string): string {
-    const { deepLinkScheme } = bankInfo;
-    
-    // Sử dụng VietQR deep link với thông tin đầy đủ
-    if (deepLinkScheme.includes('dl.vietqr.io')) {
-      // Thử nhiều format khác nhau để tìm cách autofill đúng
-      const receiverAccount = RECEIVER_BANK.accountNumber;
-      const bankCode = this.getBankCode('mb');
+    const { deepLinkScheme, autofill } = bankInfo;
+  
+    console.log(`🔗 Building VietQR deep link for ${bankInfo.shortName}:`, deepLinkScheme);
+    console.log(`🔧 Autofill support: ${autofill ? 'Yes' : 'No'}`);
+  
+    // Sử dụng VietQR deep link chính thức: https://dl.vietqr.io/pay?app=<bankId>
+    // Một số ngân hàng hỗ trợ autofill (OCB, ACB), đa số không hỗ trợ
+    // VietQR sẽ điều hướng đến app ngân hàng tương ứng
+  
+    if (deepLinkScheme.startsWith('https://dl.vietqr.io/pay')) {
+      // VietQR deep link chính thức
+      // Có thể thêm tham số trong tương lai khi VietQR hỗ trợ autofill đầy đủ
+      const fullLink = deepLinkScheme;
       
-      // Format 1: Theo VietQR spec với ba (bank account)
-      const format1 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&ba=${receiverAccount}@${bankCode}&am=${vndAmount}&memo=${encodeURIComponent(content)}`;
-      
-      // Format 2: Thử với account number trực tiếp
-      const format2 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&account=${receiverAccount}&bank=${bankCode}&amount=${vndAmount}&content=${encodeURIComponent(content)}`;
-      
-      // Format 3: Thử với receiver format
-      const format3 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&receiver=${receiverAccount}&receiverBank=${bankCode}&money=${vndAmount}&note=${encodeURIComponent(content)}`;
-      
-      // Format 4: Thử format đơn giản nhất
-      const format4 = `https://dl.vietqr.io/pay?app=${bankInfo.id}&to=${receiverAccount}&amt=${vndAmount}&msg=${encodeURIComponent(content)}`;
-      
-      console.log('🔗 Trying VietQR formats:');
-      console.log('Format 1 (ba):', format1);
-      console.log('Format 2 (account):', format2);
-      console.log('Format 3 (receiver):', format3);
-      console.log('Format 4 (simple):', format4);
-      
-      // Sử dụng format 1 làm default (theo VietQR spec)
-      return format1;
+      console.log(`🔗 VietQR deep link: ${fullLink}`);
+      return fullLink;
     }
-    
-    // Fallback cho schemes cũ (nếu có)
-    return `${deepLinkScheme}transfer`;
+  
+    // Fallback: deep link trực tiếp
+    return deepLinkScheme;
   }
 
   // Mở App Store/Play Store để tải app ngân hàng

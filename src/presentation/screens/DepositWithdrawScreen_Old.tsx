@@ -1,34 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  Image,
-  Clipboard,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../core/theme';
 import { DashboardBloc } from '../blocs/dashboard_bloc';
 import { LoadDashboardEvent } from '../blocs/dashboard_event';
 import { DashboardState, DashboardLoading, DashboardLoaded, DashboardError } from '../blocs/dashboard_state';
 import { ServiceLocator } from '../../core/di/service_locator';
-import { VietnamBankingService, BankInfo, VIETNAM_BANKS, RECEIVER_BANK } from '../../data/services/vietnam_banking_service';
-import { finanBackendService, ExchangeRates, ExchangeRatesResponse, DepositOrderResponse } from '../../data/services/finan_backend_service';
+import { VietnamBankingService, BankInfo, RECEIVER_BANK } from '../../data/services/vietnam_banking_service';
+import { finanBackendService, ExchangeRates } from '../../data/services/finan_backend_service';
 import { GetCurrentWalletUseCase } from '../../domain/usecases/dashboard_usecases';
-import { formatVND, formatUSD, formatCrypto, formatExchangeRate } from '../../core/utils/number_formatter';
-import { handleInputChange, sanitizeForAPI, parseInputValue } from '../../core/utils/simple_input_formatter';
+
+// Import new UI components
+import { TabSelector } from '../components/ui';
+import { DepositForm } from '../components/deposit';
+import { WithdrawForm } from '../components/withdraw';
 
 export const DepositWithdrawScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
-  const [displayAmount, setDisplayAmount] = useState('');
   const selectedToken = 'USDT'; // Chỉ hỗ trợ USDT
 
   // Dashboard integration states
@@ -49,8 +40,6 @@ export const DepositWithdrawScreen: React.FC = () => {
   // Backend integration states
   const [backendExchangeRates, setBackendExchangeRates] = useState<ExchangeRates | null>(null);
   const [backendConnected, setBackendConnected] = useState<boolean>(false);
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
-  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   // Vietnam Banking Service
   const bankingService = VietnamBankingService.getInstance();
@@ -132,7 +121,7 @@ export const DepositWithdrawScreen: React.FC = () => {
     );
     
     if (usdtToken) {
-      const formattedBalance = formatCrypto(parseFloat(usdtToken.balance || '0'), 'USDT', 2);
+      const formattedBalance = parseFloat(usdtToken.balance || '0').toFixed(2);
       console.log('✅ Found USDT token:', usdtToken.symbol, 'balance:', formattedBalance);
       return formattedBalance;
     } else {
@@ -264,86 +253,24 @@ export const DepositWithdrawScreen: React.FC = () => {
     getCurrentWallet();
   }, []);
 
-  const handleDeposit = async () => {
+  const handleDeposit = () => {
     if (!amount || parseFloat(amount) <= 0) {
       Alert.alert('Lỗi', 'Vui lòng nhập số lượng USDT hợp lệ');
       return;
     }
 
-    // Kiểm tra có wallet address không
-    const getCurrentWalletUseCase = ServiceLocator.get('GetCurrentWalletUseCase') as GetCurrentWalletUseCase;
-    const currentWallet = await getCurrentWalletUseCase.execute();
+    // Sử dụng tài khoản nhận cố định (RECEIVER_BANK)
+    setSelectedBank(RECEIVER_BANK);
     
-    if (!currentWallet) {
-      Alert.alert('Lỗi', 'Không tìm thấy ví hiện tại. Vui lòng tạo hoặc import ví trước.');
-      return;
-    }
-
-    setIsSubmittingOrder(true);
+    // Tạo transaction ID và QR code
+    const txId = bankingService.generateTransactionId();
+    setTransactionId(txId);
     
-    try {
-      // Tạo transaction ID trước khi gửi lên backend
-      const txId = bankingService.generateTransactionId();
-      
-      // Tạo đơn hàng nạp tiền trên backend
-      const orderData = {
-        walletAddress: currentWallet.address,
-        usdtAmount: parseFloat(amount),
-        vndAmount: vndAmount,
-        transactionId: txId, // Thêm transactionId theo yêu cầu backend
-        bankInfo: {
-          bankName: RECEIVER_BANK.name,
-          accountNumber: RECEIVER_BANK.accountNumber,
-          accountName: RECEIVER_BANK.accountName
-        },
-        transactionInfo: `Nạp ${amount} USDT từ mobile app - ${new Date().toLocaleString('vi-VN')}`
-      };
-
-      console.log('🔄 Đang tạo đơn hàng nạp tiền:', orderData);
-      const response: DepositOrderResponse = await finanBackendService.createDepositOrder(orderData);
-      
-      // Backend trả về: { success: true, message: "...", order: {...} }
-      const order = response.order;
-      
-      console.log('✅ Đơn hàng nạp tiền đã được tạo:', {
-        orderId: order.id,
-        status: order.status,
-        usdtAmount: order.usdtAmount,
-        vndAmount: order.vndAmount
-      });
-
-      // Lưu order ID và sử dụng transaction ID đã tạo
-      setCurrentOrderId(order.id);
-      setTransactionId(txId);
-      
-      // Sử dụng tài khoản nhận cố định (RECEIVER_BANK)
-      setSelectedBank(RECEIVER_BANK);
-      
-      // Tạo QR code với transaction ID đã tạo
-      const content = bankingService.generateTransferContent(txId, parseFloat(amount));
-      const qrUrl = bankingService.generateVietQRCode(RECEIVER_BANK, vndAmount, content);
-      setQrCodeUrl(qrUrl);
-      
-      setShowPaymentDetails(true);
-      
-      // Thông báo thành công
-      Alert.alert(
-        'Thành công',
-        `Đơn hàng nạp tiền đã được tạo!\n\nMã đơn hàng: ${order.id}\nSố tiền: ${formatCrypto(order.usdtAmount, 'USDT', 6)}\nTương đương: ${formatVND(order.vndAmount, true)}\n\nVui lòng chuyển khoản theo thông tin bên dưới.`,
-        [{ text: 'OK' }]
-      );
-      
-    } catch (error) {
-      console.error('❌ Lỗi tạo đơn hàng nạp tiền:', error);
-      Alert.alert(
-        'Lỗi',
-        'Không thể tạo đơn hàng nạp tiền. Vui lòng kiểm tra kết nối mạng và thử lại.\n\n' + 
-        (error instanceof Error ? error.message : 'Lỗi không xác định'),
-        [{ text: 'Đóng' }]
-      );
-    } finally {
-      setIsSubmittingOrder(false);
-    }
+    const content = bankingService.generateTransferContent(txId, parseFloat(amount));
+    const qrUrl = bankingService.generateVietQRCode(RECEIVER_BANK, vndAmount, content);
+    setQrCodeUrl(qrUrl);
+    
+    setShowPaymentDetails(true);
   };
 
   const handleBankSelection = (userBank: BankInfo) => {
@@ -384,7 +311,7 @@ export const DepositWithdrawScreen: React.FC = () => {
   const handleCopyAccountInfo = () => {
     if (!selectedBank) return;
     
-    const accountInfo = `${selectedBank.shortName}\nSTK: ${selectedBank.accountNumber}\nTên: ${selectedBank.accountName}\nSố tiền: ${formatVND(vndAmount || 0)}\nNội dung: ${bankingService.generateTransferContent(transactionId, parseFloat(amount))}`;
+    const accountInfo = `${selectedBank.shortName}\nSTK: ${selectedBank.accountNumber}\nTên: ${selectedBank.accountName}\nSố tiền: ${(vndAmount || 0).toLocaleString('vi-VN')} VND\nNội dung: ${bankingService.generateTransferContent(transactionId, parseFloat(amount))}`;
     
     Clipboard.setString(accountInfo);
     Alert.alert('Thành công', 'Đã sao chép thông tin tài khoản');
@@ -773,17 +700,6 @@ export const DepositWithdrawScreen: React.FC = () => {
       textAlign: 'center',
       fontWeight: '500',
     },
-    buttonDisabled: {
-      opacity: 0.6,
-    },
-    buttonLoadingContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    buttonLoader: {
-      marginRight: 8,
-    },
   });
 
   return (
@@ -845,13 +761,9 @@ export const DepositWithdrawScreen: React.FC = () => {
             <Text style={styles.inputLabel}>Nhập số lượng {selectedToken}</Text>
             <TextInput
               style={styles.input}
-              value={displayAmount}
-              onChangeText={(text) => {
-                const { displayValue, rawValue } = handleInputChange(text);
-                setDisplayAmount(displayValue);
-                setAmount(sanitizeForAPI(rawValue)); // Giữ raw value cho API
-              }}
-              placeholder={`0,00 ${selectedToken}`}
+              value={amount}
+              onChangeText={setAmount}
+              placeholder={`0.00 ${selectedToken}`}
               placeholderTextColor={colors.textSecondary}
               keyboardType="decimal-pad"
             />
@@ -870,11 +782,11 @@ export const DepositWithdrawScreen: React.FC = () => {
                     baseRate = backendExchangeRates.usdToVnd;
                   }
                   const displayRate = activeTab === 'withdraw' ? baseRate - 600 : baseRate;
-                  return formatVND(displayRate, false);
+                  return displayRate.toLocaleString('vi-VN');
                 })()} VND
               </Text>
               <Text style={styles.vndAmountText}>
-                ≈ {formatVND(vndAmount || 0)}
+                ≈ {(vndAmount || 0).toLocaleString('vi-VN')} VND
               </Text>
               {activeTab === 'withdraw' && (
                 <Text style={{
@@ -891,20 +803,12 @@ export const DepositWithdrawScreen: React.FC = () => {
           )}
 
           <TouchableOpacity
-            style={[styles.button, (isSubmittingOrder && activeTab === 'deposit') && styles.buttonDisabled]}
+            style={styles.button}
             onPress={activeTab === 'deposit' ? handleDeposit : handleWithdraw}
-            disabled={isSubmittingOrder && activeTab === 'deposit'}
           >
-            {isSubmittingOrder && activeTab === 'deposit' ? (
-              <View style={styles.buttonLoadingContainer}>
-                <ActivityIndicator size="small" color="white" style={styles.buttonLoader} />
-                <Text style={styles.buttonText}>Đang tạo đơn hàng...</Text>
-              </View>
-            ) : (
-              <Text style={styles.buttonText}>
-                {activeTab === 'deposit' ? '🔄 Nạp tiền' : '💸 Rút tiền'}
-              </Text>
-            )}
+            <Text style={styles.buttonText}>
+              {activeTab === 'deposit' ? '🔄 Nạp tiền' : '💸 Rút tiền'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -975,7 +879,7 @@ export const DepositWithdrawScreen: React.FC = () => {
                   <View style={styles.paymentInfoRow}>
                     <Text style={styles.paymentInfoLabel}>Số tiền:</Text>
                     <Text style={[styles.paymentInfoValue, { color: '#059669', fontWeight: 'bold' }]}>
-                      {formatVND(vndAmount || 0)}
+                      {(vndAmount || 0).toLocaleString('vi-VN')} VND
                     </Text>
                   </View>
                   <View style={styles.paymentInfoRow}>

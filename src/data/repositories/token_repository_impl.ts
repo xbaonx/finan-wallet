@@ -2,17 +2,15 @@ import { TokenEntity, WalletBalance } from '../../domain/entities/token_entity';
 import { TokenRepository } from '../../domain/repositories/token_repository';
 import { ethers, JsonRpcProvider, Contract, formatEther, formatUnits } from 'ethers';
 import { POPULAR_TOKENS } from '../../core/config/token_list';
-import { BinancePriceService } from '../services/binance_price_service';
+import { unifiedPriceService } from '../services/unified_price_service';
 import { API_CONFIG } from '../../core/config/api_config';
 
 export class TokenRepositoryImpl implements TokenRepository {
   private provider: JsonRpcProvider;
-  private binancePriceService: BinancePriceService;
 
   constructor() {
     // BSC RPC endpoint
     this.provider = new JsonRpcProvider('https://bsc-dataseed1.binance.org/');
-    this.binancePriceService = new BinancePriceService();
   }
 
   async getWalletBalance(walletAddress: string): Promise<WalletBalance> {
@@ -24,7 +22,7 @@ export class TokenRepositoryImpl implements TokenRepository {
       const bnbBalanceFormatted = formatEther(bnbBalance);
       
       // Lấy giá BNB từ Binance
-      const bnbPrice = await this.binancePriceService.getTokenPrice('BNB');
+      const bnbPrice = await unifiedPriceService.getTokenPrice('BNB');
       const bnbValue = parseFloat(bnbBalanceFormatted) * bnbPrice;
       
       console.log(`💰 BNB Balance: ${bnbBalanceFormatted} BNB ($${bnbValue.toFixed(2)})`);
@@ -62,7 +60,7 @@ export class TokenRepositoryImpl implements TokenRepository {
         
         for (const tokenBalance of allTokenBalances) {
           if (tokenBalance.balance > 0) {
-            const tokenPrice = await this.binancePriceService.getTokenPrice(tokenBalance.symbol);
+            const tokenPrice = await unifiedPriceService.getTokenPrice(tokenBalance.symbol, tokenBalance.address);
             const tokenValue = tokenBalance.balance * tokenPrice;
             
             tokens.push({
@@ -143,7 +141,7 @@ export class TokenRepositoryImpl implements TokenRepository {
       
       const balance = await ethContract.balanceOf(walletAddress);
       const balanceFormatted = formatEther(balance);
-      const ethPrice = await this.binancePriceService.getTokenPrice('ETH');
+      const ethPrice = await unifiedPriceService.getTokenPrice('ETH');
       
       return {
         name: 'Ethereum Token',
@@ -187,7 +185,7 @@ export class TokenRepositoryImpl implements TokenRepository {
       for (const address of tokenAddresses) {
         const token = POPULAR_TOKENS.find(t => t.address.toLowerCase() === address.toLowerCase());
         if (token) {
-          const price = await this.binancePriceService.getTokenPrice(token.symbol);
+          const price = await unifiedPriceService.getTokenPrice(token.symbol, token.address);
           prices[address] = price;
         } else {
           prices[address] = 0;
@@ -207,7 +205,7 @@ export class TokenRepositoryImpl implements TokenRepository {
 
   async getETHPrice(): Promise<number> {
     try {
-      return await this.binancePriceService.getTokenPrice('ETH');
+      return await unifiedPriceService.getTokenPrice('ETH');
     } catch (error) {
       console.error('❌ Lỗi lấy ETH price:', error);
       return 0;
@@ -341,7 +339,7 @@ export class TokenRepositoryImpl implements TokenRepository {
           console.log(`🔍 ETH Manual Check - Raw: ${ethBalance.toString()} - Formatted: ${ethBalanceFormatted}`);
           
           if (ethBalanceFormatted > 0) {
-            const ethPrice = await this.binancePriceService.getTokenPrice('ETH');
+            const ethPrice = await unifiedPriceService.getTokenPrice('ETH');
             
             tokens.push({
               address: ethTokenAddress,

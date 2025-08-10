@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TransactionHistoryBloc } from '../blocs/transaction_history_bloc';
 import { TransactionHistoryState, TransactionDetailLoading, TransactionDetailLoaded, TransactionDetailError } from '../blocs/transaction_history_state';
 import { LoadTransactionDetail } from '../blocs/transaction_history_event';
+import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
+import { formatUSD, formatCrypto, formatExchangeRate } from '../../core/utils/number_formatter';
 import { TransactionEntity, TransactionType, TransactionStatus } from '../../domain/entities/transaction_entity';
 
 interface TransactionDetailScreenProps {
@@ -61,7 +63,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({
       return `< 0.001 ${symbol}`;
     }
     
-    return `${numAmount.toFixed(6).replace(/\.?0+$/, '')} ${symbol}`;
+    return formatCrypto(numAmount, symbol, 6);
   };
 
   const formatDate = (date: Date): string => {
@@ -147,7 +149,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({
         {renderDetailRow('Từ token', `${formatAmount(transaction.swapData.fromAmount, transaction.swapData.fromTokenSymbol)}`)}
         {renderDetailRow('Sang token', `${formatAmount(transaction.swapData.toAmount, transaction.swapData.toTokenSymbol)}`)}
         {transaction.swapData.exchangeRate && (
-          renderDetailRow('Tỷ giá', `1 ${transaction.swapData.fromTokenSymbol} = ${transaction.swapData.exchangeRate.toFixed(6)} ${transaction.swapData.toTokenSymbol}`)
+          renderDetailRow('Tỷ giá', formatExchangeRate(transaction.swapData.exchangeRate, transaction.swapData.fromTokenSymbol, transaction.swapData.toTokenSymbol))
         )}
       </View>
     );
@@ -196,7 +198,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({
               {formatAmount(transaction.amount, transaction.tokenSymbol)}
             </Text>
             {transaction.amountUSD && (
-              <Text style={styles.usdAmount}>≈ ${transaction.amountUSD.toFixed(2)}</Text>
+              <Text style={styles.usdAmount}>≈ {formatUSD(transaction.amountUSD)}</Text>
             )}
           </View>
 
@@ -232,7 +234,7 @@ const TransactionDetailScreen: React.FC<TransactionDetailScreenProps> = ({
               <Text style={styles.sectionTitle}>Thông tin gas</Text>
               {transaction.gasUsed && renderDetailRow('Gas đã sử dụng', transaction.gasUsed)}
               {transaction.gasPrice && renderDetailRow('Giá gas', `${transaction.gasPrice} wei`)}
-              {transaction.gasFeeUSD && renderDetailRow('Phí gas', `$${transaction.gasFeeUSD.toFixed(4)}`)}
+              {transaction.gasFeeUSD && renderDetailRow('Phí gas', formatUSD(transaction.gasFeeUSD, true, 4))}
             </View>
           )}
 

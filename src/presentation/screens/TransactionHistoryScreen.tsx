@@ -17,6 +17,8 @@ import { TransactionHistoryState, TransactionHistoryLoading, TransactionHistoryL
 import { LoadTransactionHistory, RefreshTransactionHistory, LoadMoreTransactions, FilterTransactionHistory } from '../blocs/transaction_history_event';
 import { TransactionEntity, TransactionType, TransactionStatus, TransactionFilter } from '../../domain/entities/transaction_entity';
 import { SecureStorageService } from '../../data/services/secure_storage_service';
+import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
+import { formatUSD, formatCrypto } from '../../core/utils/number_formatter';
 import { getTokenIcon } from '../../core/utils/token_icon_utils';
 import { getTransactionHistoryStrings } from '../../core/localization/transaction_history_strings';
 
@@ -113,7 +115,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
       return `< 0.001 ${symbol}`;
     }
     
-    return `${numAmount.toFixed(6).replace(/\.?0+$/, '')} ${symbol}`;
+    return formatCrypto(numAmount, symbol, 6);
   };
 
   const formatDate = (date: Date): string => {
@@ -196,7 +198,7 @@ const TransactionHistoryScreen: React.FC<TransactionHistoryScreenProps> = ({
         </View>
         
         {item.amountUSD && (
-          <Text style={[styles.usdAmount, { color: colors.text }]}>≈ ${item.amountUSD.toFixed(2)}</Text>
+          <Text style={[styles.usdAmount, { color: colors.text }]}>≈ {formatUSD(item.amountUSD)}</Text>
         )}
       </View>
     </TouchableOpacity>

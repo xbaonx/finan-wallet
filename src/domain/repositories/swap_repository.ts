@@ -8,8 +8,8 @@ export interface SwapRepository {
   getTokenPrice(tokenAddress: string): Promise<{ price: number; priceChange24h: number }>;
   
   // Swap operations
-  getSwapQuote(request: SwapRequest): Promise<SwapQuote>;
-  buildSwapTransaction(request: SwapRequest): Promise<SwapTransaction>;
+  getSwapQuote(request: SwapRequest, platformFeePercentage?: number): Promise<SwapQuote>;
+  buildSwapTransaction(request: SwapRequest, platformFeePercentage?: number): Promise<SwapTransaction>;
   executeSwap(transaction: SwapTransaction, privateKey: string): Promise<SwapResult>;
   
   // Allowance operations

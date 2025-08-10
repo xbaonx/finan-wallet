@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { SafeSecureStore } from '../../core/utils/safe_secure_store';
 import { Platform } from 'react-native';
 import { WalletEntity, WalletCredentials } from '../../domain/entities/wallet_entity';
 
@@ -96,7 +97,7 @@ export class SecureStorageService {
       if (this.isWeb) {
         credentialsData = this.webStorage.getItem(credentialsKey);
       } else {
-        credentialsData = await SecureStore.getItemAsync(credentialsKey);
+        credentialsData = await SafeSecureStore.getItemAsync(credentialsKey);
       }
       
       if (!credentialsData) {

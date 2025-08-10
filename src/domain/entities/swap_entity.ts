@@ -47,6 +47,8 @@ export interface SwapTransaction {
   value: string;
   gas: string;
   gasPrice: string;
+  fromAmount?: string;  // Thêm để tracking amount trong result
+  toAmount?: string;    // Thêm để tracking amount trong result
 }
 
 export enum SwapType {

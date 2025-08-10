@@ -14,7 +14,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
 import { TransactionUseCases } from '../../domain/usecases/transaction_usecases';
 import { SendTransactionRequest } from '../../data/services/transaction_service';
-import { formatCurrency } from '../../core/utils/format_utils';
+import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
+import { handleInputChange, sanitizeForAPI, parseInputValue } from '../../core/utils/simple_input_formatter';
 
 type SendScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Send'>;
 
@@ -25,6 +26,7 @@ interface Props {
 export const SendScreen: React.FC<Props> = ({ navigation }) => {
   const [toAddress, setToAddress] = useState('');
   const [amount, setAmount] = useState('');
+  const [displayAmount, setDisplayAmount] = useState('');
   const [tokenAddress, setTokenAddress] = useState(''); // Empty for ETH
   const [isLoading, setIsLoading] = useState(false);
   const [gasFee, setGasFee] = useState<{
@@ -144,9 +146,13 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.label}>Số lượng</Text>
           <TextInput
             style={styles.input}
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="0.0"
+            value={displayAmount}
+            onChangeText={(text) => {
+              const { displayValue, rawValue } = handleInputChange(text);
+              setDisplayAmount(displayValue);
+              setAmount(sanitizeForAPI(rawValue)); // Giữ raw value cho API
+            }}
+            placeholder="0,00"
             placeholderTextColor="#999"
             keyboardType="decimal-pad"
           />

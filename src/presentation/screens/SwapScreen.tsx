@@ -22,10 +22,14 @@ import { useThemeColors } from '../../core/theme';
 import { SwapBloc } from '../blocs/swap_bloc';
 import { SwapState, SwapInitialState, SwapLoadingState, TokensLoadedState, QuoteLoadingState, QuoteLoadedState, SwapSuccessState, SwapFailedState, SwapErrorState, ApprovingTokenState, TokenApprovedState } from '../blocs/swap_state';
 import { LoadSupportedTokensEvent, GetSwapQuoteEvent, ConfirmSwapEvent, ApproveTokenEvent, ResetSwapEvent, RefreshTokenBalancesEvent } from '../blocs/swap_event';
+import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
+import { formatUSD, formatCrypto, formatLargeNumber, formatPercentage } from '../../core/utils/number_formatter';
+import { handleInputChange, sanitizeForAPI, parseInputValue } from '../../core/utils/simple_input_formatter';
 import { TokenInfo, SwapType, SwapRequest } from '../../domain/entities/swap_entity';
 import { GetCurrentWalletUseCase } from '../../domain/usecases/dashboard_usecases';
 import { BinancePriceService } from '../../data/services/binance_price_service';
 import { GlobalTokenService } from '../../services/GlobalTokenService';
+import { finanBackendService, SwapConfig } from '../../data/services/finan_backend_service';
 import { ethers } from 'ethers';
 import { ServiceLocator } from '../../core/di/service_locator';
 
@@ -42,8 +46,8 @@ interface CoinListItemProps {
 const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPress, showBuyButton, showSellButton, tokenPrices, priceLoading }) => {
   const colors = useThemeColors();
   const formatPrice = (price?: number) => {
-    if (!price) return '$0.00';
-    return price < 0.01 ? `$${price.toFixed(6)}` : `$${price.toFixed(2)}`;
+    if (!price) return '$0,00';
+    return formatUSD(price, true, price < 0.01 ? 6 : 2);
   };
 
   // Debug log để kiểm tra giá token
@@ -56,10 +60,8 @@ const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPr
     if (!balance) return '0';
     const balanceNum = parseFloat(balance);
     if (balanceNum === 0) return '0';
-    if (balanceNum < 0.0001) return '< 0.0001';
-    if (balanceNum < 1) return balanceNum.toFixed(4);
-    if (balanceNum < 1000) return balanceNum.toFixed(2);
-    return `${(balanceNum / 1000).toFixed(2)}K`;
+    if (balanceNum < 0.0001) return '< 0,0001';
+    return formatLargeNumber(balanceNum, balanceNum < 1 ? 4 : 2);
   };
 
   return (
@@ -225,6 +227,7 @@ interface SwapModalProps {
   approvingToken?: boolean;
   tokenPrices: Map<string, number>;
   priceLoading: boolean;
+  platformFeePercentage: number;  // Thêm phí nền tảng từ backend
   quote?: {
     fromAmount: string;
     toAmount: string;
@@ -247,6 +250,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
   approvingToken = false,
   tokenPrices,
   priceLoading,
+  platformFeePercentage,
   quote,
   sellableTokens = []
 }) => {
@@ -264,6 +268,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
     }
   }, [visible, token, swapType, needsApproval, allowanceAmount, approvingToken, quote]);
   const [amount, setAmount] = useState('');
+  const [displayAmount, setDisplayAmount] = useState('');
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const screenHeight = Dimensions.get('window').height;
@@ -451,7 +456,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                       fontWeight: '600',
                       color: '#111827',
                     }}>
-                      ${(tokenPrices.get(token.symbol) || token.priceUSD || 0).toFixed(4)}
+                      {formatUSD(tokenPrices.get(token.symbol) || token.priceUSD || 0, true, 4)}
                     </Text>
                     {priceLoading && (
                       <ActivityIndicator 
@@ -487,7 +492,11 @@ const SwapModal: React.FC<SwapModalProps> = ({
                 {/* Hiển thị balance cho tab BÁN */}
                 {swapType === SwapType.SELL && token?.balance && (
                   <TouchableOpacity
-                    onPress={() => setAmount(token.balance || '0')}
+                    onPress={() => {
+                      const maxAmount = token.balance || '0';
+                      setAmount(maxAmount);
+                      setDisplayAmount(maxAmount.replace('.', ','));
+                    }}
                     style={{
                       backgroundColor: '#e0e7ff',
                       paddingHorizontal: 8,
@@ -500,7 +509,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                       color: '#3730a3',
                       fontWeight: '600',
                     }}>
-                      Có sẵn: {parseFloat(token.balance).toFixed(4)} {token.symbol}
+                      Có sẵn: {formatCrypto(parseFloat(token.balance), token.symbol, 4)}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -509,7 +518,11 @@ const SwapModal: React.FC<SwapModalProps> = ({
                   const usdtToken = sellableTokens.find((t: any) => t.symbol === 'USDT');
                   return usdtToken?.balance && parseFloat(usdtToken.balance) > 0 ? (
                     <TouchableOpacity
-                      onPress={() => setAmount(usdtToken.balance || '0')}
+                      onPress={() => {
+                        const maxAmount = usdtToken.balance || '0';
+                        setAmount(maxAmount);
+                        setDisplayAmount(maxAmount.replace('.', ','));
+                      }}
                       style={{
                         backgroundColor: '#e0e7ff',
                         paddingHorizontal: 8,
@@ -522,7 +535,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                         color: '#3730a3',
                         fontWeight: '600',
                       }}>
-                        USDT có sẵn: {parseFloat(usdtToken.balance).toFixed(2)}
+                        USDT có sẵn: {formatCrypto(parseFloat(usdtToken.balance), 'USDT', 2)}
                       </Text>
                     </TouchableOpacity>
                   ) : null;
@@ -535,10 +548,15 @@ const SwapModal: React.FC<SwapModalProps> = ({
                   color: '#111827',
                   padding: 0,
                 }}
-                placeholder="0.00"
+                placeholder="0,00"
                 placeholderTextColor="#9ca3af"
-                value={amount}
-                onChangeText={handleAmountChange}
+                value={displayAmount}
+                onChangeText={(text) => {
+                  const { displayValue, rawValue } = handleInputChange(text);
+                  setDisplayAmount(displayValue);
+                  setAmount(sanitizeForAPI(rawValue)); // Giữ raw value cho API
+                  handleAmountChange(sanitizeForAPI(rawValue));
+                }}
                 keyboardType="numeric"
               />
               {/* Validation cho tab BÁN */}
@@ -584,6 +602,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                         const percentageAmount = (balanceNum * percentage / 100).toString();
                         console.log(`🔢 Tab BÁN - ${percentage}%: ${balanceNum} * ${percentage}/100 = ${percentageAmount}`);
                         setAmount(percentageAmount);
+                        setDisplayAmount(percentageAmount.replace('.', ','));
                         // Trigger quote immediately after setting amount
                         setTimeout(() => {
                           if (percentageAmount && parseFloat(percentageAmount) > 0) {
@@ -630,6 +649,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                           const percentageAmount = (balanceNum * percentage / 100).toString();
                           console.log(`🔢 Tab MUA - ${percentage}%: ${balanceNum} * ${percentage}/100 = ${percentageAmount}`);
                           setAmount(percentageAmount);
+                          setDisplayAmount(percentageAmount.replace('.', ','));
                           // Trigger quote immediately after setting amount
                           setTimeout(() => {
                             if (percentageAmount && parseFloat(percentageAmount) > 0) {
@@ -706,7 +726,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                   fontWeight: '600',
                   color: '#0369a1',
                 }}>
-                  {quote.toAmount} {getToToken()}
+                  {formatCrypto(parseFloat(quote.toAmount), getToToken(), 6)} {getToToken()}
                 </Text>
                 
                 {/* Fee Information */}
@@ -727,7 +747,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                       color: '#0369a1',
                       opacity: 0.8,
                     }}>
-                      Phí nền tảng (0.7%)
+                      Phí nền tảng ({formatPercentage(platformFeePercentage, 1)})
                     </Text>
                     <Text style={{
                       fontSize: 12,
@@ -736,8 +756,8 @@ const SwapModal: React.FC<SwapModalProps> = ({
                     }}>
                       {(() => {
                         const fromAmount = parseFloat(quote.fromAmount || '0');
-                        const feeAmount = fromAmount * 0.007; // 0.7% fee
-                        return `${feeAmount.toFixed(6)} ${quote.fromToken.symbol}`;
+                        const feeAmount = fromAmount * platformFeePercentage; // Dynamic fee from backend
+                        return formatCrypto(feeAmount, quote.fromToken.symbol, 6);
                       })()}
                     </Text>
                   </View>
@@ -887,6 +907,11 @@ export const SwapScreen: React.FC = () => {
   // State để theo dõi trạng thái approve token
   const [isApprovingToken, setIsApprovingToken] = useState<boolean>(false);
 
+  // Backend integration states
+  const [platformFeePercentage, setPlatformFeePercentage] = useState<number>(0.009); // Default 0.9% (cập nhật từ backend)
+  const [backendConnected, setBackendConnected] = useState<boolean>(false);
+  const [swapConfig, setSwapConfig] = useState<SwapConfig | null>(null);
+
   useEffect(() => {
     // Xử lý sự thay đổi trạng thái từ SwapBloc
     const handleStateChange = (newState: SwapState) => {
@@ -924,8 +949,8 @@ export const SwapScreen: React.FC = () => {
       if (newState instanceof SwapSuccessState) {
         // Hiển thị thông báo thành công với chi tiết theo loại swap
         const successMessage = swapType === SwapType.BUY 
-          ? `Bạn đã mua ${newState.toAmount} ${newState.toTokenSymbol} bằng ${newState.fromAmount} ${newState.fromTokenSymbol}.\n\nToken đã được thêm vào ví của bạn.`
-          : `Bạn đã bán ${newState.fromAmount} ${newState.fromTokenSymbol} và nhận được ${newState.toAmount} ${newState.toTokenSymbol}.\n\nSố dư đã được cập nhật trong ví của bạn.`;
+          ? `Bạn đã mua ${formatCrypto(parseFloat(newState.toAmount), newState.toTokenSymbol, 6)} ${newState.toTokenSymbol} bằng ${formatCrypto(parseFloat(newState.fromAmount), newState.fromTokenSymbol, 6)} ${newState.fromTokenSymbol}.\n\nToken đã được thêm vào ví của bạn.`
+          : `Bạn đã bán ${formatCrypto(parseFloat(newState.fromAmount), newState.fromTokenSymbol, 6)} ${newState.fromTokenSymbol} và nhận được ${formatCrypto(parseFloat(newState.toAmount), newState.toTokenSymbol, 6)} ${newState.toTokenSymbol}.\n\nSố dư đã được cập nhật trong ví của bạn.`;
         
         Alert.alert(
           'Giao dịch thành công',
@@ -1001,9 +1026,42 @@ export const SwapScreen: React.FC = () => {
       }
     };
 
+    // Load platform fee from backend
+    const loadPlatformFee = async () => {
+      try {
+        console.log('🔄 Đang tải phí nền tảng từ backend...');
+        const config = await finanBackendService.getSwapConfig();
+        console.log('🔍 Raw config từ backend:', config);
+        
+        if (config && config.platformFeePercentage !== undefined) {
+          // Backend trả về 0.9 (đã là percentage), chúng ta cần convert sang decimal để tính toán
+          // Nhưng hiển thị vẫn là percentage
+          const rawFee = config.platformFeePercentage;
+          const feeDecimal = rawFee / 100; // 0.9 / 100 = 0.009 (0.9%)
+          
+          setPlatformFeePercentage(feeDecimal);
+          setSwapConfig(config);
+          setBackendConnected(true);
+          
+          // Truyền platformFeePercentage xuống SwapBloc
+          swapBloc.setPlatformFeePercentage(feeDecimal);
+          
+          console.log(`✅ Phí nền tảng từ backend:`);
+          console.log(`   - Raw value: ${rawFee}`);
+          console.log(`   - Decimal for calculation: ${feeDecimal}`);
+          console.log(`   - Display percentage: ${rawFee}%`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Không thể tải phí nền tảng từ backend, sử dụng mặc định:', error);
+        setBackendConnected(false);
+        // Keep default 0.9% fee (0.009 decimal) - cập nhật từ backend
+      }
+    };
+
     swapBloc.addListener(handleStateChange);
     swapBloc.add(new LoadSupportedTokensEvent());
     loadWalletAddress();
+    loadPlatformFee(); // Load backend configuration
     
     // Load tokens có balance thực tế từ Dashboard cho tab BÁN
     loadSellableTokensFromDashboard();
@@ -1366,6 +1424,10 @@ export const SwapScreen: React.FC = () => {
           {renderTabButton('sell', 'Bán coin', '💸')}
         </View>
         
+
+
+
+        
         {/* Tab Description */}
         <Text style={{
           fontSize: 14,
@@ -1517,6 +1579,7 @@ export const SwapScreen: React.FC = () => {
         approvingToken={approvingToken}
         tokenPrices={tokenPrices}
         priceLoading={priceLoading}
+        platformFeePercentage={platformFeePercentage}
         sellableTokens={sellableTokens}
         quote={state instanceof QuoteLoadedState ? {
           fromAmount: state.quote.fromAmount,

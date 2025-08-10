@@ -5,11 +5,10 @@ import {
   MoralisTokenBalanceResponse, 
   MoralisPriceResponse 
 } from '../types/moralis_types';
-import { priceCacheService } from './price_cache_service';
+import { unifiedCacheService } from './unified_cache_service';
 import { logoCacheService } from './logo_cache_service';
-import { transactionCacheService } from './transaction_cache_service';
 import { requestLogger } from '../utils/request_logger';
-import { POPULAR_TOKENS, findTokenByAddress, getTokenLogoUri } from '../../core/config/token_list';
+import { POPULAR_TOKENS, findTokenByAddress } from '../../core/config/token_list';
 
 const MORALIS_API_KEY = API_CONFIG.MORALIS.API_KEY;
 const MORALIS_BASE_URL = API_CONFIG.MORALIS.BASE_URL;
@@ -235,7 +234,7 @@ export class MoralisApiService {
               tokensToProcess.push({ token, balance, isCommonToken });
               
               // Check if price is cached
-              const cachedPrice = priceCacheService.getCachedPrice(token.token_address);
+              const cachedPrice = unifiedCacheService.getCachedPrice(token.token_address);
               if (cachedPrice === null) {
                 uncachedAddresses.push(token.token_address);
               }
@@ -252,7 +251,7 @@ export class MoralisApiService {
         // Now process all tokens with cached prices
         for (const { token, balance, isCommonToken } of tokensToProcess) {
           // Get cached price (should be available now)
-          let tokenPrice = priceCacheService.getCachedPrice(token.token_address) || 0;
+          let tokenPrice = unifiedCacheService.getCachedPrice(token.token_address) || 0;
           
           // Add fallback prices for common stablecoins
           if (tokenPrice === 0) {
@@ -370,13 +369,13 @@ export class MoralisApiService {
             const price = priceData.usdPrice || 0;
             
             // Cache the price
-            priceCacheService.setCachedPrice(address, price, priceData.tokenSymbol || 'UNKNOWN');
+            unifiedCacheService.setCachedPrice(address, price, priceData.tokenSymbol || 'UNKNOWN');
             
             console.log(`Cached price for ${address}: $${price}`);
           } else {
             console.warn(`Failed to fetch price for ${address}: ${response.status}`);
             // Cache 0 price to avoid repeated failed requests
-            priceCacheService.setCachedPrice(address, 0, 'UNKNOWN');
+            unifiedCacheService.setCachedPrice(address, 0, 'UNKNOWN');
           }
         } catch (error) {
           console.warn(`Error fetching price for ${address}:`, error);
@@ -405,7 +404,7 @@ export class MoralisApiService {
       
       // Check cache first for all addresses
       for (const address of tokenAddresses) {
-        const cachedPrice = priceCacheService.getCachedPrice(address);
+        const cachedPrice = unifiedCacheService.getCachedPrice(address);
         if (cachedPrice !== null) {
           prices[address] = cachedPrice;
           console.log(`Using cached price for ${address}: $${cachedPrice}`);
@@ -421,7 +420,7 @@ export class MoralisApiService {
         
         // Get the newly cached prices
         for (const address of uncachedAddresses) {
-          const price = priceCacheService.getCachedPrice(address) || 0;
+          const price = unifiedCacheService.getCachedPrice(address) || 0;
           prices[address] = price;
         }
       } else {
@@ -475,7 +474,7 @@ export class MoralisApiService {
   }> {
     try {
       // Check cache first
-      const cached = transactionCacheService.getCachedTransactionList(walletAddress, cursor);
+      const cached = unifiedCacheService.getCachedTransactionList(walletAddress, cursor);
       if (cached) {
         console.log(`Using cached token transfers for ${walletAddress} (cursor: ${cursor || 'first'})`);
         return {
@@ -523,7 +522,7 @@ export class MoralisApiService {
       };
       
       // Cache the result
-      transactionCacheService.setCachedTransactionList(
+      unifiedCacheService.setCachedTransactionList(
         walletAddress,
         result.transfers,
         result.cursor,
@@ -592,7 +591,7 @@ export class MoralisApiService {
   async getTransactionByHash(hash: string): Promise<any | null> {
     try {
       // Check cache first
-      const cached = transactionCacheService.getCachedTransactionDetail(hash);
+      const cached = unifiedCacheService.getCachedTransactionDetail(hash);
       if (cached) {
         console.log(`Using cached transaction detail for ${hash}`);
         return cached;
@@ -622,7 +621,7 @@ export class MoralisApiService {
       console.log('Moralis Transaction Detail Response:', JSON.stringify(data, null, 2));
       
       // Cache the result (transaction details rarely change)
-      transactionCacheService.setCachedTransactionDetail(hash, data);
+      unifiedCacheService.setCachedTransactionDetail(hash, data);
       
       return data;
     } catch (error) {
