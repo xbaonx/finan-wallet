@@ -186,7 +186,8 @@ export class VietnamBankingService {
 
   // Tạo nội dung chuyển khoản
   generateTransferContent(transactionId: string, usdtAmount: number): string {
-    return `NAP ${usdtAmount} USDT ${transactionId}`;
+    // Đơn giản hóa: chỉ trả về mã giao dịch theo yêu cầu
+    return `${transactionId}`;
   }
 
   // Tạo QR Code thanh toán VietQR

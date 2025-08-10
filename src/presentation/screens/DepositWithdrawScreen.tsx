@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../core/theme';
 import { DashboardBloc } from '../blocs/dashboard_bloc';
@@ -24,14 +26,10 @@ import { finanBackendService, ExchangeRates, ExchangeRatesResponse, DepositOrder
 import { GetCurrentWalletUseCase } from '../../domain/usecases/dashboard_usecases';
 import { formatVND, formatUSD, formatCrypto, formatExchangeRate } from '../../core/utils/number_formatter';
 import { handleInputChange, sanitizeForAPI, parseInputValue } from '../../core/utils/simple_input_formatter';
-import ViewShot from 'react-native-view-shot';
-import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
 
 export const DepositWithdrawScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
-  const viewShotRef = useRef<ViewShot>(null);
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
   const [displayAmount, setDisplayAmount] = useState('');
@@ -426,80 +424,64 @@ export const DepositWithdrawScreen: React.FC = () => {
     handleCopyText(transactionId, 'Mã giao dịch');
   };
 
-  // QR Code save functionality
+  // QR Code save functionality - Lưu trực tiếp vào thư viện ảnh
   const handleSaveQRCode = async () => {
     try {
-      // Kiểm tra quyền truy cập thư viện ảnh
+      // Yêu cầu quyền truy cập thư viện ảnh
       const { status } = await MediaLibrary.requestPermissionsAsync();
       
       if (status !== 'granted') {
         Alert.alert(
           'Cần quyền truy cập',
-          'Vui lòng cấp quyền truy cập thư viện ảnh để lưu QR code.',
-          [{ text: 'Đã hiểu' }]
+          'Ứng dụng cần quyền truy cập thư viện ảnh để lưu QR code. Vui lòng cấp quyền trong Cài đặt.',
+          [
+            { text: 'Hủy', style: 'cancel' },
+            { text: 'Mở Cài đặt', onPress: () => {
+              Alert.alert('Hướng dẫn', 'Vui lòng vào Cài đặt > Finan > Ảnh và cấp quyền truy cập.');
+            }}
+          ]
         );
         return;
       }
 
-      // Hiển thị loading
-      const loadingAlertId = setTimeout(() => {
-        Alert.alert(
-          'Đang lưu QR Code',
-          'Đang xử lý...',
-          [],
-          { cancelable: false }
-        );
-      }, 100);
+      // Tải và lưu ảnh QR code (không hiển thị loading popup)
+      const fileUri = FileSystem.documentDirectory + `qr_code_${transactionId}.png`;
+      const downloadResult = await FileSystem.downloadAsync(qrCodeUrl, fileUri);
+      
+      if (downloadResult.status === 200) {
+        // Lưu ảnh vào thư viện
+        const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+        
+        // Tạo album riêng cho Finan (tùy chọn)
+        try {
+          const album = await MediaLibrary.getAlbumAsync('Finan Wallet');
+          if (album == null) {
+            await MediaLibrary.createAlbumAsync('Finan Wallet', asset, false);
+          } else {
+            await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+          }
+        } catch (albumError) {
+          console.log('Không thể tạo album, lưu vào thư viện chính:', albumError);
+        }
 
-      // Chụp ảnh QR code bằng ViewShot
-      if (viewShotRef.current && viewShotRef.current.capture) {
-        const uri = await viewShotRef.current.capture();
-        
-        // Lưu ảnh vào thư viện ảnh
-        const asset = await MediaLibrary.createAssetAsync(uri);
-        await MediaLibrary.createAlbumAsync('Finan Wallet', asset, false);
-        
-        // Xóa alert loading và hiển thị thông báo thành công
-        clearTimeout(loadingAlertId);
+        // Xóa file tạm
+        await FileSystem.deleteAsync(fileUri, { idempotent: true });
+
+        // Chỉ hiển thị 1 popup thành công duy nhất
         Alert.alert(
-          'Thành công',
-          'QR code đã được lưu vào thư viện ảnh của bạn.',
-          [
-            { text: 'Chia sẻ QR Code', onPress: handleShareQRCode },
-            { text: 'Đóng', style: 'default' }
-          ]
+          'Lưu thành công! 🎉',
+          `QR code đã được lưu vào thư viện ảnh.\n\nMã giao dịch: ${transactionId}`,
+          [{ text: 'OK' }]
         );
       } else {
-        clearTimeout(loadingAlertId);
-        Alert.alert('Lỗi', 'Không thể chụp QR code. Vui lòng thử lại.');
+        throw new Error('Không thể tải ảnh QR code');
       }
     } catch (error) {
-      console.error('Lỗi khi lưu QR code:', error);
+      console.error('Lỗi lưu QR code:', error);
       Alert.alert(
-        'Lỗi',
-        'Không thể lưu QR code. Vui lòng thử lại sau.',
-        [{ text: 'Chụp màn hình thay thế', onPress: showScreenshotInstructions }]
-      );
-    }
-  };
-  
-  // Hiển thị hướng dẫn chụp màn hình (fallback)
-  const showScreenshotInstructions = () => {
-    if (Platform.OS === 'ios') {
-      Alert.alert(
-        'Hướng dẫn chụp màn hình (iOS)',
-        'iPhone có Face ID: Nhấn nút nguồn + tăng âm lượng cùng lúc\n\n' +
-        'iPhone có nút Home: Nhấn nút nguồn + nút Home cùng lúc\n\n' +
-        'Ảnh chụp màn hình sẽ được lưu vào thư viện ảnh của bạn.',
-        [{ text: 'Đã hiểu' }]
-      );
-    } else {
-      Alert.alert(
-        'Hướng dẫn chụp màn hình (Android)',
-        'Nhấn giữ nút nguồn + giảm âm lượng cùng lúc trong 1-2 giây\n\n' +
-        'Một số máy: Vuốt 3 ngón tay từ trên xuống dưới màn hình\n\n' +
-        'Ảnh chụp màn hình sẽ được lưu vào thư viện ảnh của bạn.',
-        [{ text: 'Đã hiểu' }]
+        'Lỗi lưu ảnh',
+        'Không thể lưu QR code. Bạn có thể chụp màn hình để lưu.',
+        [{ text: 'OK' }]
       );
     }
   };
@@ -817,16 +799,6 @@ export const DepositWithdrawScreen: React.FC = () => {
     qrCodeContainer: {
       alignItems: 'center',
       marginBottom: 24,
-    },
-    qrCode: {
-      width: '100%',
-      height: 200,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 16,
-      backgroundColor: '#fff',
-      borderRadius: 8,
-      padding: 8,
     },
     qrCodeImage: {
       width: 200,
@@ -1220,36 +1192,30 @@ export const DepositWithdrawScreen: React.FC = () => {
             {/* QR Code Section */}
             <View style={styles.qrCodeSection}>
               <Text style={styles.qrCodeTitle}>Quét mã QR để chuyển khoản</Text>
-              <ViewShot
-                ref={viewShotRef}
-                options={{ format: 'png', quality: 0.9 }}
-                style={styles.qrCodeContainer}
-              >
-                {qrCodeUrl ? (
+              <View style={styles.qrCodeContainer}>
+                <View style={styles.qrCodeWrapper}>
                   <Image
                     source={{ uri: qrCodeUrl }}
-                    style={styles.qrCode}
+                    style={styles.qrCodeImage}
                     resizeMode="contain"
                   />
-                ) : (
-                  <ActivityIndicator size="large" color="#0000ff" />
-                )}
-              </ViewShot>
-              <View style={styles.qrCodeActions}>
-                <TouchableOpacity 
-                  style={styles.qrActionButton}
-                  onPress={handleSaveQRCode}
-                >
-                  <Text style={styles.qrActionButtonIcon}>💾</Text>
-                  <Text style={styles.qrActionButtonText}>Lưu QR</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.qrActionButton}
-                  onPress={handleShareQRCode}
-                >
-                  <Text style={styles.qrActionButtonIcon}>📤</Text>
-                  <Text style={styles.qrActionButtonText}>Chia sẻ</Text>
-                </TouchableOpacity>
+                </View>
+                <View style={styles.qrCodeActions}>
+                  <TouchableOpacity 
+                    style={styles.qrActionButton}
+                    onPress={handleSaveQRCode}
+                  >
+                    <Text style={styles.qrActionButtonIcon}>💾</Text>
+                    <Text style={styles.qrActionButtonText}>Lưu QR</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.qrActionButton}
+                    onPress={handleShareQRCode}
+                  >
+                    <Text style={styles.qrActionButtonIcon}>📤</Text>
+                    <Text style={styles.qrActionButtonText}>Chia sẻ</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 
