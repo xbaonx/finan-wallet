@@ -319,6 +319,33 @@ export class FinanBackendService {
       return false;
     }
   }
+
+  /**
+   * Lấy cấu hình chế độ ứng dụng
+   */
+  async getAppMode(): Promise<{success: boolean, isReviewMode: boolean}> {
+    try {
+      // API trả về giá trị boolean đơn giản (true/false) thay vì object
+      const response = await this.makeRequest<boolean>(
+        API_CONFIG.FINAN_BACKEND.ENDPOINTS.GET_APP_MODE
+      );
+      
+      console.log(`[FinanBackend] API app-mode trả về: ${response}`);
+      
+      // API trả về true có nghĩa là đang ở chế độ review
+      return {
+        success: true,
+        isReviewMode: response === true
+      };
+    } catch (error) {
+      console.warn('⚠️ Không thể lấy cấu hình chế độ ứng dụng từ backend, sử dụng chế độ mặc định');
+      // Trả về chế độ mặc định nếu backend không khả dụng
+      return {
+        success: true,
+        isReviewMode: false // Mặc định hiển thị tính năng nạp/rút
+      };
+    }
+  }
 }
 
 // Export singleton instance

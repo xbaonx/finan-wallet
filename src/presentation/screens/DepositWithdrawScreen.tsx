@@ -1097,7 +1097,7 @@ export const DepositWithdrawScreen: React.FC = () => {
       flex: 1,
       justifyContent: 'flex-end',
     },
-    copyIcon: {
+    detailCopyIcon: {
       marginLeft: 8,
     },
   });
@@ -1296,7 +1296,7 @@ export const DepositWithdrawScreen: React.FC = () => {
                 <Text style={styles.orderSummaryLabel}>Mã giao dịch:</Text>
                 <TouchableOpacity onPress={handleCopyTransactionId} style={styles.copyableContainer}>
                   <Text style={[styles.orderSummaryValue, styles.copyableText]}>{transactionId}</Text>
-                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.detailCopyIcon} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1325,7 +1325,7 @@ export const DepositWithdrawScreen: React.FC = () => {
                 <Text style={styles.paymentInfoLabel}>Số tài khoản:</Text>
                 <View style={styles.copyableContainer}>
                   <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountNumber}</Text>
-                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.detailCopyIcon} />
                 </View>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -1335,7 +1335,7 @@ export const DepositWithdrawScreen: React.FC = () => {
                 <Text style={styles.paymentInfoLabel}>Tên tài khoản:</Text>
                 <View style={styles.copyableContainer}>
                   <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountName}</Text>
-                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.detailCopyIcon} />
                 </View>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -1347,7 +1347,7 @@ export const DepositWithdrawScreen: React.FC = () => {
                   <Text style={[styles.paymentInfoValue, styles.highlightAmount]}>
                     {formatVND(vndAmount || 0)}
                   </Text>
-                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.detailCopyIcon} />
                 </View>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -1359,7 +1359,7 @@ export const DepositWithdrawScreen: React.FC = () => {
                   <Text style={[styles.paymentInfoValue, styles.copyableText]}>
                     {bankingService.generateTransferContent(transactionId, parseFloat(amount))}
                   </Text>
-                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.detailCopyIcon} />
                 </View>
               </TouchableOpacity>
             </View>

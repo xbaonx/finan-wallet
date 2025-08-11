@@ -66,7 +66,10 @@ export const API_CONFIG = {
       TRACK_INSTALL: '/analytics/install',
       TRACK_EVENT: '/analytics/event',
       GET_ANALYTICS: '/analytics/dashboard',
-      GET_UTM_STATS: '/analytics/utm-stats'
+      GET_UTM_STATS: '/analytics/utm-stats',
+      
+      // App configuration endpoints
+      GET_APP_MODE: '/app-mode'
     }
   },
 

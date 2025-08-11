@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TabParamList } from './types';
@@ -8,11 +8,37 @@ import { DepositWithdrawScreen } from '../screens/DepositWithdrawScreen';
 import { TransactionHistoryScreenWrapper } from '../screens/TransactionHistoryScreenWrapper';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { useThemeColors } from '../../core/theme';
+import { finanBackendService } from '../../data/services/finan_backend_service';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export const TabNavigator: React.FC = () => {
   const colors = useThemeColors();
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAppMode = async () => {
+      try {
+        const appModeResponse = await finanBackendService.getAppMode();
+        if (appModeResponse.success) {
+          setIsReviewMode(appModeResponse.isReviewMode);
+          console.log(`[TabNavigator] Chế độ review: ${appModeResponse.isReviewMode ? 'BẬT' : 'TẮT'}`);
+        }
+      } catch (error) {
+        console.error('[TabNavigator] Lỗi khi lấy cấu hình app mode:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAppMode();
+  }, []);
+
+  // Hiển thị loading hoặc fallback nếu cần
+  if (isLoading) {
+    // Vẫn render tabs bình thường trong khi đang loading
+  }
 
   return (
     <Tab.Navigator
@@ -64,20 +90,22 @@ export const TabNavigator: React.FC = () => {
           ),
         }}
       />
-      <Tab.Screen
-        name="DepositWithdraw"
-        component={DepositWithdrawScreen}
-        options={{
-          tabBarLabel: 'Nạp/Rút',
-          tabBarIcon: ({ color, size, focused }) => (
-            <MaterialIcons 
-              name={focused ? "account-balance-wallet" : "account-balance-wallet"} 
-              size={size} 
-              color={color} 
-            />
-          ),
-        }}
-      />
+      {!isReviewMode && (
+        <Tab.Screen
+          name="DepositWithdraw"
+          component={DepositWithdrawScreen}
+          options={{
+            tabBarLabel: 'Nạp/Rút',
+            tabBarIcon: ({ color, size, focused }) => (
+              <MaterialIcons 
+                name={focused ? "account-balance-wallet" : "account-balance-wallet"} 
+                size={size} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen
         name="History"
         component={TransactionHistoryScreenWrapper}
