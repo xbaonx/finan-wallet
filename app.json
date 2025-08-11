@@ -17,7 +17,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.finan.cryptowallet"
+      "bundleIdentifier": "com.finan.cryptowallet",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Finan Wallet sử dụng Face ID để bảo mật và xác thực truy cập vào ví tiền điện tử của bạn."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +33,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Finan Wallet sử dụng Face ID để bảo mật và xác thực truy cập vào ví tiền điện tử của bạn."
+        }
+      ]
     ]
   }
 }

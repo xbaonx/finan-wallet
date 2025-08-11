@@ -1,22 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal,
+  ScrollView,
   TextInput,
   Alert,
   ActivityIndicator,
-  ScrollView,
-  Image,
+  Modal,
   Dimensions,
-  FlatList,
-  RefreshControl,
   Platform,
   Keyboard,
-  KeyboardAvoidingView,
+  Image,
+  FlatList,
+  RefreshControl,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../core/theme';
 import { SwapBloc } from '../blocs/swap_bloc';
@@ -726,7 +727,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
                   fontWeight: '600',
                   color: '#0369a1',
                 }}>
-                  {formatCrypto(parseFloat(quote.toAmount), getToToken(), 6)} {getToToken()}
+                  {formatCrypto(parseFloat(quote.toAmount), getToToken(), 6)}
                 </Text>
                 
                 {/* Fee Information */}
@@ -876,6 +877,7 @@ const SwapModal: React.FC<SwapModalProps> = ({
   );
 };
 export const SwapScreen: React.FC = () => {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const [swapBloc] = useState(() => ServiceLocator.get<SwapBloc>('SwapBloc'));
@@ -926,6 +928,78 @@ export const SwapScreen: React.FC = () => {
         loadTokenPrices(newState.filteredTokens);
       }
       
+      // Kiểm tra số dư USDT ngay sau khi có quote
+      if (newState instanceof QuoteLoadedState && swapType === SwapType.BUY) {
+        const requiredAmount = newState.fromAmount;
+        const requiredAmountNum = parseFloat(requiredAmount);
+        
+        // Lấy USDT balance từ GlobalTokenService thay vì sellableTokens
+        const getUSDTBalance = async () => {
+          try {
+            const globalTokenService = GlobalTokenService.getInstance();
+            const walletBalance = await globalTokenService.getWalletBalance();
+            const usdtToken = walletBalance?.tokens?.find(token => token.symbol === 'USDT');
+            return usdtToken?.balance ? parseFloat(usdtToken.balance) : 0;
+          } catch (error) {
+            console.error('❌ Error getting USDT balance:', error);
+            return 0;
+          }
+        };
+        
+        // Async check balance
+        getUSDTBalance().then(currentBalance => {
+          console.log('💰 Auto USDT Balance Check after quote - DETAILED:', {
+            required: requiredAmountNum,
+            current: currentBalance,
+            sufficient: currentBalance >= requiredAmountNum,
+            selectedToken: selectedToken?.symbol,
+            fromGlobalService: true
+          });
+          
+          if (currentBalance < requiredAmountNum) {
+            const shortfall = requiredAmountNum - currentBalance;
+            
+            console.log('🚨 USDT không đủ - Sẽ hiển thị alert:', {
+              shortfall,
+              willShowAlert: true
+            });
+            
+            // Hiển thị alert ngay sau khi có quote
+            setTimeout(() => {
+              console.log('🚨 Đang hiển thị alert thiếu USDT...');
+              Alert.alert(
+                'Số dư USDT không đủ',
+                `Số dư hiện tại: ${currentBalance.toFixed(2)} USDT\nCần nạp thêm: ${shortfall.toFixed(2)} USDT\n\nBạn có muốn nạp thêm USDT không?`,
+                [
+                  {
+                    text: 'Hủy',
+                    style: 'cancel',
+                    onPress: () => console.log('👤 User chọn Hủy')
+                  },
+                  {
+                    text: 'Nạp USDT',
+                    onPress: () => {
+                      console.log('🔄 User chọn Nạp USDT - Điều hướng với số lượng thiếu:', shortfall);
+                      setShowSwapModal(false); // Đóng swap modal trước
+                      
+                      // Điều hướng sang màn hình nạp rút với amount autofill
+                      setTimeout(() => {
+                        (navigation as any).navigate('DepositWithdraw', {
+                          prefilledAmount: shortfall.toString(),
+                          token: 'USDT'
+                        });
+                      }, 300);
+                    }
+                  }
+                ]
+              );
+            }, 500); // Giảm delay vì đã có async
+          } else {
+            console.log('✅ USDT đủ - Không cần hiển thị alert');
+          }
+        });
+      }
+      
       // Cập nhật trạng thái approve token
       if (newState instanceof ApprovingTokenState) {
         setApprovingToken(true);
@@ -949,8 +1023,8 @@ export const SwapScreen: React.FC = () => {
       if (newState instanceof SwapSuccessState) {
         // Hiển thị thông báo thành công với chi tiết theo loại swap
         const successMessage = swapType === SwapType.BUY 
-          ? `Bạn đã mua ${formatCrypto(parseFloat(newState.toAmount), newState.toTokenSymbol, 6)} ${newState.toTokenSymbol} bằng ${formatCrypto(parseFloat(newState.fromAmount), newState.fromTokenSymbol, 6)} ${newState.fromTokenSymbol}.\n\nToken đã được thêm vào ví của bạn.`
-          : `Bạn đã bán ${formatCrypto(parseFloat(newState.fromAmount), newState.fromTokenSymbol, 6)} ${newState.fromTokenSymbol} và nhận được ${formatCrypto(parseFloat(newState.toAmount), newState.toTokenSymbol, 6)} ${newState.toTokenSymbol}.\n\nSố dư đã được cập nhật trong ví của bạn.`;
+          ? `Bạn đã mua ${parseFloat(newState.toAmount).toFixed(6)} ${newState.toTokenSymbol} bằng ${parseFloat(newState.fromAmount).toFixed(2)} ${newState.fromTokenSymbol}.\n\nToken đã được thêm vào ví của bạn.`
+          : `Bạn đã bán ${parseFloat(newState.fromAmount).toFixed(6)} ${newState.fromTokenSymbol} và nhận được ${parseFloat(newState.toAmount).toFixed(2)} ${newState.toTokenSymbol}.\n\nSố dư đã được cập nhật trong ví của bạn.`;
         
         Alert.alert(
           'Giao dịch thành công',
@@ -1136,6 +1210,54 @@ export const SwapScreen: React.FC = () => {
 
     // Gửi request lấy báo giá
     swapBloc.add(new GetSwapQuoteEvent(request));
+  };
+
+  // Function kiểm tra số dư USDT và hiển thị alert điều hướng
+  const checkUSDTBalanceAndNavigate = (requiredAmount: string): boolean => {
+    if (swapType !== SwapType.BUY) return true; // Chỉ check cho tab MUA
+    
+    const usdtToken = sellableTokens.find((t: any) => t.symbol === 'USDT');
+    const requiredAmountNum = parseFloat(requiredAmount);
+    const currentBalance = usdtToken?.balance ? parseFloat(usdtToken.balance) : 0;
+    
+    console.log('💰 USDT Balance Check:', {
+      required: requiredAmountNum,
+      current: currentBalance,
+      sufficient: currentBalance >= requiredAmountNum
+    });
+    
+    if (currentBalance < requiredAmountNum) {
+      const shortfall = requiredAmountNum - currentBalance;
+      
+      Alert.alert(
+        'Số dư USDT không đủ',
+        `Bạn cần ${formatCrypto(requiredAmountNum, 'USDT', 2)} USDT để mua ${selectedToken?.symbol}.\n\nSố dư hiện tại: ${formatCrypto(currentBalance, 'USDT', 2)} USDT\nCòn thiếu: ${formatCrypto(shortfall, 'USDT', 2)} USDT\n\nBạn có muốn nạp thêm USDT không?`,
+        [
+          {
+            text: 'Hủy',
+            style: 'cancel'
+          },
+          {
+            text: 'Nạp USDT',
+            onPress: () => {
+              console.log('🔄 Điều hướng sang màn hình nạp rút với số lượng thiếu:', shortfall);
+              setShowSwapModal(false); // Đóng swap modal trước
+              
+              // Điều hướng sang màn hình nạp rút với amount autofill
+              setTimeout(() => {
+                (navigation as any).navigate('DepositWithdraw', {
+                  prefilledAmount: shortfall.toString(),
+                  token: 'USDT'
+                });
+              }, 300);
+            }
+          }
+        ]
+      );
+      return false;
+    }
+    
+    return true;
   };
 
   const handleSwapConfirm = (amount: string) => {
@@ -1346,7 +1468,7 @@ export const SwapScreen: React.FC = () => {
     />
   );
 
-  const renderTabButton = (tabKey: 'buy' | 'sell', title: string, icon: string) => (
+  const renderTabButton = (tabKey: 'buy' | 'sell', title: string, iconName: string) => (
     <TouchableOpacity
       style={{
         flex: 1,
@@ -1355,16 +1477,25 @@ export const SwapScreen: React.FC = () => {
         backgroundColor: activeTab === tabKey ? '#3b82f6' : 'transparent',
         borderRadius: 8,
         marginHorizontal: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
       onPress={() => setActiveTab(tabKey)}
     >
+      <MaterialIcons 
+        name={iconName as any} 
+        size={20} 
+        color={activeTab === tabKey ? 'white' : '#6b7280'} 
+        style={{ marginRight: 8 }}
+      />
       <Text style={{
         fontSize: 16,
         fontWeight: '600',
         color: activeTab === tabKey ? 'white' : '#6b7280',
         textAlign: 'center',
       }}>
-        {icon} {title}
+        {title}
       </Text>
     </TouchableOpacity>
   );
@@ -1420,8 +1551,8 @@ export const SwapScreen: React.FC = () => {
           borderRadius: 12,
           padding: 4,
         }}>
-          {renderTabButton('buy', 'Mua coin', '💰')}
-          {renderTabButton('sell', 'Bán coin', '💸')}
+          {renderTabButton('buy', 'Mua coin', 'trending-up')}
+          {renderTabButton('sell', 'Bán coin', 'trending-down')}
         </View>
         
 

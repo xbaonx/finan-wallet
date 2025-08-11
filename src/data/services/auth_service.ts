@@ -188,14 +188,26 @@ export class AuthService {
         };
       }
 
-      const result = await LocalAuthentication.authenticateAsync({
+      console.log('🔐 Starting biometric authentication...');
+
+      // Thêm timeout để tránh hang
+      const authPromise = LocalAuthentication.authenticateAsync({
         promptMessage: 'Xác thực để mở khóa Finan Wallet',
         cancelLabel: 'Hủy',
         fallbackLabel: 'Sử dụng mã PIN',
-        disableDeviceFallback: false,
+        disableDeviceFallback: false, // Cho phép fallback về PIN iPhone
+        requireConfirmation: false,
       });
 
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Authentication timeout')), 10000);
+      });
+
+      const result = await Promise.race([authPromise, timeoutPromise]) as any;
+      console.log('🔐 Authentication result:', result);
+
       if (result.success) {
+        console.log('🔐 Authentication successful');
         return { success: true };
       } else {
         let errorMessage = 'Xác thực sinh trắc học thất bại';
@@ -208,8 +220,11 @@ export class AuthService {
           errorMessage = 'Hệ thống đã hủy xác thực';
         } else if (result.error === 'authentication_failed') {
           errorMessage = 'Xác thực thất bại';
+        } else if (result.error === 'missing_usage_description') {
+          errorMessage = 'Face ID chưa được cấu hình (cần development build)';
         }
 
+        console.log('🔐 Authentication failed:', errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (error) {

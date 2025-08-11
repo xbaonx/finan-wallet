@@ -1,6 +1,6 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { MaterialIcons } from '@expo/vector-icons';
 import { TabParamList } from './types';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { SwapScreen } from '../screens/SwapScreen';
@@ -41,8 +41,12 @@ export const TabNavigator: React.FC = () => {
         component={DashboardScreen}
         options={{
           tabBarLabel: 'Trang chủ',
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon icon="🏠" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialIcons 
+              name={focused ? "dashboard" : "dashboard"} 
+              size={size} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -51,8 +55,12 @@ export const TabNavigator: React.FC = () => {
         component={SwapScreen}
         options={{
           tabBarLabel: 'Mua/Bán',
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon icon="⇄" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialIcons 
+              name={focused ? "swap-horiz" : "swap-horiz"} 
+              size={size} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -61,8 +69,12 @@ export const TabNavigator: React.FC = () => {
         component={DepositWithdrawScreen}
         options={{
           tabBarLabel: 'Nạp/Rút',
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon icon="💰" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialIcons 
+              name={focused ? "account-balance-wallet" : "account-balance-wallet"} 
+              size={size} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -71,8 +83,12 @@ export const TabNavigator: React.FC = () => {
         component={TransactionHistoryScreenWrapper}
         options={{
           tabBarLabel: 'Lịch sử',
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon icon="📋" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialIcons 
+              name={focused ? "history" : "history"} 
+              size={size} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -81,31 +97,15 @@ export const TabNavigator: React.FC = () => {
         component={SettingsScreen}
         options={{
           tabBarLabel: 'Cài đặt',
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon icon="⚙️" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialIcons 
+              name={focused ? "settings" : "settings"} 
+              size={size} 
+              color={color} 
+            />
           ),
         }}
       />
     </Tab.Navigator>
-  );
-};
-
-interface TabIconProps {
-  icon: string;
-  color: string;
-  size: number;
-}
-
-const TabIcon: React.FC<TabIconProps> = ({ icon, color, size }) => {
-  return (
-    <Text
-      style={{
-        fontSize: size,
-        color: color,
-        textAlign: 'center',
-      }}
-    >
-      {icon}
-    </Text>
   );
 };

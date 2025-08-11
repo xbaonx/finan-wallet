@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
@@ -100,7 +101,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
-  const renderSettingItem = (title: string, subtitle: string, onPress: () => void, icon: string) => (
+  const renderSettingItem = (title: string, subtitle: string, onPress: () => void, iconName: string) => (
     <TouchableOpacity
       style={styles.settingItem}
       onPress={onPress}
@@ -108,14 +109,14 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     >
       <View style={styles.settingLeft}>
         <View style={styles.settingIcon}>
-          <Text style={styles.settingIconText}>{icon}</Text>
+          <MaterialIcons name={iconName as any} size={24} color={colors.primary} />
         </View>
         <View style={styles.settingInfo}>
           <Text style={styles.settingTitle}>{title}</Text>
           <Text style={styles.settingSubtitle}>{subtitle}</Text>
         </View>
       </View>
-      <Text style={styles.settingArrow}>›</Text>
+      <MaterialIcons name="chevron-right" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 
@@ -136,13 +137,13 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             'Sao lưu ví',
             'Sao lưu cụm từ khôi phục',
             handleBackupWallet,
-            '🔐'
+            'backup'
           )}
           {renderSettingItem(
             'Bảo mật sinh trắc học',
             'Mở khóa bằng vân tay/Face ID',
             handleSecurity,
-            '👆'
+            'fingerprint'
           )}
         </View>
 
@@ -152,7 +153,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             'Chế độ giao diện',
             `Hiện tại: ${getThemeText()}`,
             handleThemeToggle,
-            '🎨'
+            'palette'
           )}
         </View>
 
@@ -162,13 +163,13 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             'Trung tâm hỗ trợ',
             'Câu hỏi thường gặp và hướng dẫn',
             handleSupport,
-            '❓'
+            'help'
           )}
           {renderSettingItem(
             'Liên hệ',
             'Gửi phản hồi cho chúng tôi',
             handleSupport,
-            '📧'
+            'email'
           )}
         </View>
 
@@ -181,14 +182,14 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           >
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, styles.dangerIcon]}>
-                <Text style={styles.settingIconText}>🚪</Text>
+                <MaterialIcons name="logout" size={24} color="#dc2626" />
               </View>
               <View style={styles.settingInfo}>
                 <Text style={[styles.settingTitle, styles.dangerText]}>Đăng xuất ví</Text>
                 <Text style={styles.settingSubtitle}>Xóa ví khỏi thiết bị này</Text>
               </View>
             </View>
-            <Text style={[styles.settingArrow, styles.dangerText]}>›</Text>
+            <MaterialIcons name="chevron-right" size={20} color="#dc2626" />
           </TouchableOpacity>
         </View>
 

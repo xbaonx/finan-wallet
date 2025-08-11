@@ -13,6 +13,8 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +32,9 @@ import { handleInputChange, sanitizeForAPI, parseInputValue } from '../../core/u
 export const DepositWithdrawScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const route = useRoute();
+  const params = route.params as { prefilledAmount?: string; token?: string } | undefined;
+  
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
   const [displayAmount, setDisplayAmount] = useState('');
@@ -58,6 +63,29 @@ export const DepositWithdrawScreen: React.FC = () => {
 
   // Vietnam Banking Service
   const bankingService = VietnamBankingService.getInstance();
+
+  // Handle navigation params for autofill
+  useEffect(() => {
+    if (params?.prefilledAmount && params?.token === 'USDT') {
+      console.log('🔄 DepositWithdraw nhận params từ SwapScreen:', params);
+      
+      // Set tab to deposit (nạp tiền)
+      setActiveTab('deposit');
+      
+      // Autofill amount
+      const prefilledAmount = params.prefilledAmount;
+      setAmount(prefilledAmount);
+      setDisplayAmount(prefilledAmount);
+      
+      // Tính VND amount dựa trên exchange rate
+      const numAmount = parseFloat(prefilledAmount);
+      if (!isNaN(numAmount)) {
+        setVndAmount(numAmount * exchangeRate);
+      }
+      
+      console.log('✅ Đã autofill số lượng USDT cần nạp:', prefilledAmount);
+    }
+  }, [params, exchangeRate]);
 
   // Initialize DashboardBloc
   useEffect(() => {
@@ -845,12 +873,21 @@ export const DepositWithdrawScreen: React.FC = () => {
     paymentInfoRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
+      alignItems: 'flex-start',
+      marginBottom: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     paymentInfoLabel: {
       fontSize: 14,
       color: colors.textSecondary,
+      fontWeight: '500',
+      minWidth: 100,
+      marginRight: 12,
     },
     paymentInfoValue: {
       fontSize: 14,
@@ -1020,32 +1057,48 @@ export const DepositWithdrawScreen: React.FC = () => {
       fontSize: 16,
     },
     copyableText: {
-      color: '#3b82f6',
-      textDecorationLine: 'underline',
+      color: colors.primary,
+      flex: 1,
+      textAlign: 'right',
+      marginRight: 8,
     },
     // Updated Payment Info Styles
     copyAllButton: {
-      backgroundColor: '#f0f9ff',
+      backgroundColor: colors.surface,
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: '#3b82f6',
+      borderColor: colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     copyAllButtonText: {
       fontSize: 12,
-      color: '#3b82f6',
+      color: colors.primary,
       fontWeight: '500',
+      marginLeft: 6,
     },
     copyableRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       marginBottom: 8,
-      paddingVertical: 4,
-      paddingHorizontal: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
       borderRadius: 8,
-      backgroundColor: '#f8fafc',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    copyableContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    copyIcon: {
+      marginLeft: 8,
     },
   });
 
@@ -1062,17 +1115,23 @@ export const DepositWithdrawScreen: React.FC = () => {
           style={[styles.tab, activeTab === 'deposit' && styles.activeTab]}
           onPress={() => setActiveTab('deposit')}
         >
-          <Text style={[styles.tabText, activeTab === 'deposit' && styles.activeTabText]}>
-            💰 Nạp tiền
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <MaterialIcons name="trending-up" size={16} color={activeTab === 'deposit' ? 'white' : colors.textSecondary} style={{ marginRight: 6 }} />
+            <Text style={[styles.tabText, activeTab === 'deposit' && styles.activeTabText]}>
+              Nạp tiền
+            </Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'withdraw' && styles.activeTab]}
           onPress={() => setActiveTab('withdraw')}
         >
-          <Text style={[styles.tabText, activeTab === 'withdraw' && styles.activeTabText]}>
-            💸 Rút tiền
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <MaterialIcons name="trending-down" size={16} color={activeTab === 'withdraw' ? 'white' : colors.textSecondary} style={{ marginRight: 6 }} />
+            <Text style={[styles.tabText, activeTab === 'withdraw' && styles.activeTabText]}>
+              Rút tiền
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -1084,7 +1143,10 @@ export const DepositWithdrawScreen: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-            <Text style={[styles.cardTitle, { marginBottom: 0 }]}>💵 Số dư USDT</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialIcons name="account-balance-wallet" size={18} color={colors.text} style={{ marginRight: 8 }} />
+              <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Số dư USDT</Text>
+            </View>
             {isLoading ? (
               <ActivityIndicator size="small" color="#16a34a" />
             ) : (
@@ -1165,7 +1227,7 @@ export const DepositWithdrawScreen: React.FC = () => {
               </View>
             ) : (
               <Text style={styles.buttonText}>
-                {activeTab === 'deposit' ? '🔄 Nạp tiền' : '💸 Rút tiền'}
+                {activeTab === 'deposit' ? 'Nạp tiền' : 'Rút tiền'}
               </Text>
             )}
           </TouchableOpacity>
@@ -1205,14 +1267,14 @@ export const DepositWithdrawScreen: React.FC = () => {
                     style={styles.qrActionButton}
                     onPress={handleSaveQRCode}
                   >
-                    <Text style={styles.qrActionButtonIcon}>💾</Text>
+                    <MaterialIcons name="save-alt" size={20} color={colors.primary} />
                     <Text style={styles.qrActionButtonText}>Lưu QR</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.qrActionButton}
                     onPress={handleShareQRCode}
                   >
-                    <Text style={styles.qrActionButtonIcon}>📤</Text>
+                    <MaterialIcons name="share" size={20} color={colors.primary} />
                     <Text style={styles.qrActionButtonText}>Chia sẻ</Text>
                   </TouchableOpacity>
                 </View>
@@ -1232,74 +1294,75 @@ export const DepositWithdrawScreen: React.FC = () => {
               </View>
               <View style={styles.orderSummaryRow}>
                 <Text style={styles.orderSummaryLabel}>Mã giao dịch:</Text>
-                <TouchableOpacity onPress={handleCopyTransactionId}>
-                  <Text style={[styles.orderSummaryValue, styles.copyableText]}>{transactionId} 📋</Text>
+                <TouchableOpacity onPress={handleCopyTransactionId} style={styles.copyableContainer}>
+                  <Text style={[styles.orderSummaryValue, styles.copyableText]}>{transactionId}</Text>
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Payment Information */}
             <View style={styles.paymentInfoCard}>
+              <View style={styles.paymentInfoHeader}>
+                <Text style={styles.paymentInfoTitle}>Thông tin chuyển khoản</Text>
+                <TouchableOpacity
+                  style={styles.copyAllButton}
+                  onPress={handleCopyAccountInfo}
+                >
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} />
+                  <Text style={styles.copyAllButtonText}>Sao chép tất cả</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.paymentInfoRow}>
+                <Text style={styles.paymentInfoLabel}>Ngân hàng:</Text>
+                <Text style={styles.paymentInfoValue}>{selectedBank.shortName}</Text>
+              </View>
               <TouchableOpacity 
-                style={styles.paymentInfoHeader}
-                onPress={() => setShowPaymentInfo(!showPaymentInfo)}
+                style={styles.copyableRow}
+                onPress={handleCopyBankAccount}
               >
-                <Text style={styles.paymentInfoTitle}>Chi tiết chuyển khoản</Text>
-                <View style={styles.headerActions}>
-                  <TouchableOpacity
-                    style={styles.copyAllButton}
-                    onPress={handleCopyAccountInfo}
-                  >
-                    <Text style={styles.copyAllButtonText}>📋 Sao chép tất cả</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.dropdownIcon}>
-                    {showPaymentInfo ? '▲' : '▼'}
-                  </Text>
+                <Text style={styles.paymentInfoLabel}>Số tài khoản:</Text>
+                <View style={styles.copyableContainer}>
+                  <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountNumber}</Text>
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
                 </View>
               </TouchableOpacity>
-              
-              {showPaymentInfo && (
-                <>
-                  <View style={styles.paymentInfoRow}>
-                    <Text style={styles.paymentInfoLabel}>Ngân hàng:</Text>
-                    <Text style={styles.paymentInfoValue}>{selectedBank.shortName}</Text>
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.copyableRow}
-                    onPress={handleCopyBankAccount}
-                  >
-                    <Text style={styles.paymentInfoLabel}>Số tài khoản:</Text>
-                    <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountNumber} 📋</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.copyableRow}
-                    onPress={handleCopyAccountName}
-                  >
-                    <Text style={styles.paymentInfoLabel}>Tên tài khoản:</Text>
-                    <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountName} 📋</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.copyableRow}
-                    onPress={handleCopyAmount}
-                  >
-                    <Text style={styles.paymentInfoLabel}>Số tiền:</Text>
-                    <Text style={[styles.paymentInfoValue, styles.highlightAmount]}>
-                      {formatVND(vndAmount || 0)} 📋
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.copyableRow}
-                    onPress={handleCopyTransferContent}
-                  >
-                    <Text style={styles.paymentInfoLabel}>Nội dung:</Text>
-                    <Text style={[styles.paymentInfoValue, styles.copyableText]}>
-                      {bankingService.generateTransferContent(transactionId, parseFloat(amount))} 📋
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
+              <TouchableOpacity 
+                style={styles.copyableRow}
+                onPress={handleCopyAccountName}
+              >
+                <Text style={styles.paymentInfoLabel}>Tên tài khoản:</Text>
+                <View style={styles.copyableContainer}>
+                  <Text style={[styles.paymentInfoValue, styles.copyableText]}>{selectedBank.accountName}</Text>
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.copyableRow}
+                onPress={handleCopyAmount}
+              >
+                <Text style={styles.paymentInfoLabel}>Số tiền:</Text>
+                <View style={styles.copyableContainer}>
+                  <Text style={[styles.paymentInfoValue, styles.highlightAmount]}>
+                    {formatVND(vndAmount || 0)}
+                  </Text>
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.copyableRow}
+                onPress={handleCopyTransferContent}
+              >
+                <Text style={styles.paymentInfoLabel}>Nội dung:</Text>
+                <View style={styles.copyableContainer}>
+                  <Text style={[styles.paymentInfoValue, styles.copyableText]}>
+                    {bankingService.generateTransferContent(transactionId, parseFloat(amount))}
+                  </Text>
+                  <MaterialIcons name="content-copy" size={16} color={colors.primary} style={styles.copyIcon} />
+                </View>
+              </TouchableOpacity>
             </View>
-
 
           </ScrollView>
         </View>

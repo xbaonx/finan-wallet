@@ -60,7 +60,13 @@ export const API_CONFIG = {
       GET_SWAP_CONFIG: '/swap/config',
       CALCULATE_SWAP_FEE: '/swap/calculate-fee',
       VALIDATE_SWAP: '/swap/validate',
-      GET_SUPPORTED_TOKENS: '/swap/tokens'
+      GET_SUPPORTED_TOKENS: '/swap/tokens',
+      
+      // Analytics endpoints
+      TRACK_INSTALL: '/analytics/install',
+      TRACK_EVENT: '/analytics/event',
+      GET_ANALYTICS: '/analytics/dashboard',
+      GET_UTM_STATS: '/analytics/utm-stats'
     }
   },
 
