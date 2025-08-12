@@ -18,6 +18,7 @@ import { ServiceLocator } from '../../core/di/service_locator';
 import { LogoutWalletUseCase } from '../../domain/usecases/wallet_usecases';
 import { CacheService } from '../../data/services/cache_service';
 import { useThemeColors, useTheme } from '../../core/theme';
+import { LogoComponent } from '../components/LogoComponent';
 
 type SettingsScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Settings'>,
@@ -128,7 +129,10 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Cài đặt</Text>
+          <View style={styles.headerContent}>
+            <LogoComponent size="medium" style={{ marginRight: 12 }} />
+            <Text style={[styles.title, { color: colors.text }]}>Cài đặt</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -227,6 +231,10 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 16,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,

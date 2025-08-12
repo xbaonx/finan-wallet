@@ -25,6 +25,7 @@ import { ServiceLocator } from '../../core/di/service_locator';
 import { formatCurrency, formatTokenBalance, truncateAddress } from '../../core/utils/format_utils';
 import { formatUSD, formatCrypto, formatLargeNumber } from '../../core/utils/number_formatter';
 import { TokenEntity } from '../../domain/entities/token_entity';
+import { LogoComponent } from '../components/LogoComponent';
 
 type DashboardScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Dashboard'>,
@@ -265,10 +266,15 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.greeting, { color: colors.text }]}>Xin chào!</Text>
-          <Text style={[styles.walletAddress, { color: colors.textSecondary }]}>
-            {wallet ? truncateAddress(wallet.address) : 'Đang tải...'}
-          </Text>
+          <View style={styles.headerLeft}>
+            <LogoComponent size="medium" style={{ marginRight: 12 }} />
+            <View>
+              <Text style={[styles.greeting, { color: colors.text }]}>Xin chào!</Text>
+              <Text style={[styles.walletAddress, { color: colors.textSecondary }]}>
+                {wallet ? truncateAddress(wallet.address) : 'Đang tải...'}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Total Balance */}
@@ -406,6 +412,10 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   greeting: {
     fontSize: 24,
