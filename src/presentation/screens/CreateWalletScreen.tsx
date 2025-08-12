@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Image,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -162,6 +163,11 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
+          <Image 
+            source={require('../../../assets/images/logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Tạo ví mới</Text>
           <Text style={styles.subtitle}>
             Tạo một ví mã hóa mới để bắt đầu quản lý tài sản của bạn
@@ -231,6 +237,12 @@ const styles = StyleSheet.create({
   header: {
     marginTop: 40,
     marginBottom: 32,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,

@@ -30,9 +30,11 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.content}>
         {/* Logo/Icon Section */}
         <View style={styles.logoSection}>
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>₿</Text>
-          </View>
+          <Image 
+            source={require('../../../assets/images/logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain"
+          />
           <Text style={styles.appName}>Finan</Text>
           <Text style={styles.subtitle}>Ví tiền mã hóa an toàn</Text>
         </View>
@@ -90,19 +92,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 60,
   },
-  logoPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#3b82f6',
-    justifyContent: 'center',
-    alignItems: 'center',
+  logo: {
+    width: 100,
+    height: 100,
     marginBottom: 16,
-  },
-  logoText: {
-    fontSize: 32,
-    color: '#ffffff',
-    fontWeight: 'bold',
   },
   appName: {
     fontSize: 32,
