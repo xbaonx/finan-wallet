@@ -104,9 +104,20 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
     setMnemonicWords(newWords);
   };
 
-  const pasteMnemonic = () => {
-    // In a real implementation, get from clipboard
-    Alert.alert('Thông báo', 'Tính năng dán từ clipboard sẽ được thêm vào');
+  const pasteMnemonic = async () => {
+    try {
+      // Sử dụng Expo Clipboard API
+      const { getStringAsync } = await import('expo-clipboard');
+      const text = await getStringAsync();
+      if (text) {
+        setMnemonic(text);
+      } else {
+        Alert.alert('Thông báo', 'Clipboard trống');
+      }
+    } catch (error) {
+      console.error('Lỗi khi đọc clipboard:', error);
+      Alert.alert('Lỗi', 'Không thể đọc dữ liệu từ clipboard');
+    }
   };
 
   const renderTextInput = () => (

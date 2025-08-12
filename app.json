@@ -2,15 +2,14 @@
   "expo": {
     "name": "Finan",
     "slug": "finan-crypto-wallet",
-    "sdkVersion": "53.0.0",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#121212"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,19 +17,29 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finan.cryptowallet",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Finan Wallet sử dụng Face ID để bảo mật và xác thực truy cập vào ví tiền điện tử của bạn."
+        "NSFaceIDUsageDescription": "Finan Wallet sử dụng Face ID để bảo mật và xác thực truy cập vào ví tiền điện tử của bạn.",
+        "NSCameraUsageDescription": "Ứng dụng cần quyền truy cập camera để quét QR code.",
+        "NSPhotoLibraryUsageDescription": "Ứng dụng cần quyền truy cập thư viện ảnh để lưu QR code."
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#121212"
       },
-      "package": "com.finan.cryptowallet"
+      "package": "com.finan.cryptowallet",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-secure-store",
@@ -39,7 +48,14 @@
         {
           "faceIDPermission": "Finan Wallet sử dụng Face ID để bảo mật và xác thực truy cập vào ví tiền điện tử của bạn."
         }
-      ]
-    ]
+      ],
+      "expo-media-library",
+      "expo-file-system"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "finan-crypto-wallet"
+      }
+    }
   }
 }

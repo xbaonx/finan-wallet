@@ -13,7 +13,7 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
   const [systemColorScheme, setSystemColorScheme] = useState<ColorSchemeName>(
     Appearance.getColorScheme()
   );
@@ -23,22 +23,23 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     if (themeMode === 'light') return lightTheme;
     if (themeMode === 'dark') return darkTheme;
     
-    // System mode - follow system preference
-    return systemColorScheme === 'dark' ? darkTheme : lightTheme;
+    // System mode - follow system preference, nhưng ưu tiên dark theme
+    return systemColorScheme === 'light' ? lightTheme : darkTheme;
   };
 
-  const [theme, setTheme] = useState<Theme>(getCurrentTheme());
+  // Luôn khởi tạo với dark theme trước, sau đó mới cập nhật theo preference
+  const [theme, setTheme] = useState<Theme>(darkTheme);
 
   // Load saved theme mode from storage
   useEffect(() => {
     const loadThemeMode = async () => {
       try {
-        const savedMode = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-        if (savedMode && ['light', 'dark', 'system'].includes(savedMode)) {
-          setThemeModeState(savedMode as ThemeMode);
-        }
+        // Luôn đặt chế độ tối làm mặc định trước
+        await AsyncStorage.setItem(THEME_STORAGE_KEY, 'dark');
+        setThemeModeState('dark');
+        console.log('⚫️ Đã đặt chế độ tối làm mặc định');
       } catch (error) {
-        console.error('Error loading theme mode:', error);
+        console.error('Error setting dark theme mode:', error);
       }
     };
 
