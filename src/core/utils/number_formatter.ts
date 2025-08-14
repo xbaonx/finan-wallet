@@ -8,6 +8,37 @@ export class VietnameseNumberFormatter {
   private static readonly LOCALE = 'vi-VN';
   
   /**
+   * Manual Vietnamese number formatting (fallback for Android)
+   * Converts US format (1,234.56) to Vietnamese format (1.234,56)
+   */
+  private static formatVietnameseNumber(num: number, decimals: number = 2): string {
+    if (isNaN(num)) return '0';
+    
+    const isNegative = num < 0;
+    const absNum = Math.abs(num);
+    
+    // Split integer and decimal parts
+    const parts = absNum.toFixed(decimals).split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1];
+    
+    // Add thousand separators (dots) to integer part
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    // Combine with Vietnamese decimal separator (comma)
+    let result = formattedInteger;
+    if (decimals > 0 && decimalPart && decimalPart !== '0'.repeat(decimals)) {
+      // Remove trailing zeros from decimal part
+      const trimmedDecimal = decimalPart.replace(/0+$/, '');
+      if (trimmedDecimal) {
+        result += ',' + trimmedDecimal;
+      }
+    }
+    
+    return isNegative ? '-' + result : result;
+  }
+  
+  /**
    * Format số tiền VND
    * @param amount - Số tiền (number)
    * @param showCurrency - Hiển thị đơn vị tiền tệ (default: true)
@@ -22,10 +53,7 @@ export class VietnameseNumberFormatter {
       return showCurrency ? '0 VND' : '0';
     }
     
-    const formatted = numAmount.toLocaleString(this.LOCALE, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
+    const formatted = VietnameseNumberFormatter.formatVietnameseNumber(numAmount, 0);
     
     return showCurrency ? `${formatted} VND` : formatted;
   }
@@ -46,10 +74,7 @@ export class VietnameseNumberFormatter {
       return showCurrency ? '$0,00' : '0,00';
     }
     
-    const formatted = numAmount.toLocaleString(this.LOCALE, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    });
+    const formatted = VietnameseNumberFormatter.formatVietnameseNumber(numAmount, decimals);
     
     return showCurrency ? `$${formatted}` : formatted;
   }
@@ -70,11 +95,8 @@ export class VietnameseNumberFormatter {
       return `0 ${symbol}`;
     }
     
-    // Loại bỏ trailing zeros
-    const formatted = numAmount.toLocaleString(this.LOCALE, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: decimals
-    });
+    // Use manual formatting to ensure Vietnamese format on Android
+    const formatted = VietnameseNumberFormatter.formatVietnameseNumber(numAmount, decimals);
     
     return `${formatted} ${symbol}`;
   }
@@ -119,10 +141,7 @@ export class VietnameseNumberFormatter {
     }
     
     const percentValue = numPercentage * 100;
-    const formatted = percentValue.toLocaleString(this.LOCALE, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    });
+    const formatted = VietnameseNumberFormatter.formatVietnameseNumber(percentValue, decimals);
     
     return `${formatted}%`;
   }
@@ -146,28 +165,16 @@ export class VietnameseNumberFormatter {
     const sign = numAmount < 0 ? '-' : '';
     
     if (absAmount >= 1e9) {
-      const formatted = (absAmount / 1e9).toLocaleString(this.LOCALE, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-      });
+      const formatted = VietnameseNumberFormatter.formatVietnameseNumber(absAmount / 1e9, decimals);
       return `${sign}${formatted}B`;
     } else if (absAmount >= 1e6) {
-      const formatted = (absAmount / 1e6).toLocaleString(this.LOCALE, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-      });
+      const formatted = VietnameseNumberFormatter.formatVietnameseNumber(absAmount / 1e6, decimals);
       return `${sign}${formatted}M`;
     } else if (absAmount >= 1e3) {
-      const formatted = (absAmount / 1e3).toLocaleString(this.LOCALE, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-      });
+      const formatted = VietnameseNumberFormatter.formatVietnameseNumber(absAmount / 1e3, decimals);
       return `${sign}${formatted}K`;
     } else {
-      return numAmount.toLocaleString(this.LOCALE, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: decimals
-      });
+      return VietnameseNumberFormatter.formatVietnameseNumber(numAmount, decimals);
     }
   }
   
@@ -186,10 +193,7 @@ export class VietnameseNumberFormatter {
       return '0';
     }
     
-    return numAmount.toLocaleString(this.LOCALE, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    });
+    return VietnameseNumberFormatter.formatVietnameseNumber(numAmount, decimals);
   }
   
   /**

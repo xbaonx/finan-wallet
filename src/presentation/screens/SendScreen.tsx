@@ -233,7 +233,7 @@ export const SendScreen: React.FC<Props> = ({ navigation }) => {
 
       const fee = await transactionUseCases.estimateTransactionFee(request);
       // Calculate USD value for gas fee
-      const usdValue = fee.totalFee ? (parseFloat(fee.totalFee) * 2500).toFixed(2) : '0'; // Assume BNB ~$250
+      const usdValue = fee.totalFee ? formatUSD(parseFloat(fee.totalFee) * 2500, false) : '0'; // Assume BNB ~$250
       setGasEstimate({ ...fee, usdValue });
     } catch (error: any) {
       console.log('Gas estimation error:', error.message);

@@ -969,7 +969,7 @@ export const SwapScreen: React.FC = () => {
               console.log('🚨 Đang hiển thị alert thiếu USDT...');
               Alert.alert(
                 'Số dư USDT không đủ',
-                `Số dư hiện tại: ${currentBalance.toFixed(2)} USDT\nCần nạp thêm: ${shortfall.toFixed(2)} USDT\n\nBạn có muốn nạp thêm USDT không?`,
+                `Số dư hiện tại: ${formatCrypto(currentBalance, 'USDT', 2)}\nCần nạp thêm: ${formatCrypto(shortfall, 'USDT', 2)}\n\nBạn có muốn nạp thêm USDT không?`,
                 [
                   {
                     text: 'Hủy',
@@ -1023,8 +1023,8 @@ export const SwapScreen: React.FC = () => {
       if (newState instanceof SwapSuccessState) {
         // Hiển thị thông báo thành công với chi tiết theo loại swap
         const successMessage = swapType === SwapType.BUY 
-          ? `Bạn đã mua ${parseFloat(newState.toAmount).toFixed(6)} ${newState.toTokenSymbol} bằng ${parseFloat(newState.fromAmount).toFixed(2)} ${newState.fromTokenSymbol}.\n\nToken đã được thêm vào ví của bạn.`
-          : `Bạn đã bán ${parseFloat(newState.fromAmount).toFixed(6)} ${newState.fromTokenSymbol} và nhận được ${parseFloat(newState.toAmount).toFixed(2)} ${newState.toTokenSymbol}.\n\nSố dư đã được cập nhật trong ví của bạn.`;
+          ? `Bạn đã mua ${formatCrypto(parseFloat(newState.toAmount), newState.toTokenSymbol, 6)} bằng ${formatCrypto(parseFloat(newState.fromAmount), newState.fromTokenSymbol, 2)}.\n\nToken đã được thêm vào ví của bạn.`
+          : `Bạn đã bán ${formatCrypto(parseFloat(newState.fromAmount), newState.fromTokenSymbol, 6)} và nhận được ${formatCrypto(parseFloat(newState.toAmount), newState.toTokenSymbol, 2)}.\n\nSố dư đã được cập nhật trong ví của bạn.`;
         
         Alert.alert(
           'Giao dịch thành công',
