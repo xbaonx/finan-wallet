@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS: BalanceNotificationSettings = {
   frequency: 30000, // 30 seconds
   types: ['all'],
   quietHours: {
-    enabled: true,
+    enabled: false,
     start: '22:00',
     end: '08:00'
   }
@@ -175,11 +175,7 @@ export class HybridBalanceService {
           return BackgroundFetch.BackgroundFetchResult.NoData;
         }
         
-        // Check quiet hours
-        if (this.isQuietHours(settings.quietHours)) {
-          console.log('🌙 Quiet hours active, skipping notifications...');
-          return BackgroundFetch.BackgroundFetchResult.NoData;
-        }
+        // Đã bỏ tính năng quiet hours - thông báo luôn hoạt động 24/7
         
         // Get wallet address
         const wallet = await this.walletRepository.getWallet();
