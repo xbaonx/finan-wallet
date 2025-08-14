@@ -90,17 +90,78 @@ export class TransactionService {
       let transaction: any;
 
       if (request.tokenAddress) {
-        // Gửi ERC20 token
-        const tokenContract = new ethers.Contract(
-          request.tokenAddress,
-          [
-            'function transfer(address to, uint256 amount) returns (bool)',
-            'function decimals() view returns (uint8)'
-          ],
-          wallet
-        );
+        // Gửi ERC20 token với multi-network support
+        let decimals = 18; // Default decimals for most tokens
+        let tokenContract: ethers.Contract;
+        let activeWallet = wallet; // Use mutable variable
+        
+        try {
+          // Thử BSC network trước (vì app chủ yếu dùng BSC)
+          const bscProvider = new ethers.JsonRpcProvider('https://bsc-dataseed1.binance.org/');
+          const bscWallet = wallet.connect(bscProvider);
+          
+          tokenContract = new ethers.Contract(
+            request.tokenAddress,
+            [
+              'function transfer(address to, uint256 amount) returns (bool)',
+              'function decimals() view returns (uint8)'
+            ],
+            bscWallet
+          );
 
-        const decimals = await tokenContract.decimals();
+          console.log('🔍 Trying BSC network for token:', request.tokenAddress);
+          decimals = await tokenContract.decimals();
+          console.log('✅ BSC token decimals:', decimals);
+          activeWallet = bscWallet; // Use BSC wallet for transaction
+          
+        } catch (bscError) {
+          console.log('❌ BSC failed, trying ETH network:', bscError);
+          
+          try {
+            // Fallback to ETH network
+            const ethProvider = new ethers.JsonRpcProvider('https://cloudflare-eth.com');
+            const ethWallet = wallet.connect(ethProvider);
+            
+            tokenContract = new ethers.Contract(
+              request.tokenAddress,
+              [
+                'function transfer(address to, uint256 amount) returns (bool)',
+                'function decimals() view returns (uint8)'
+              ],
+              ethWallet
+            );
+
+            console.log('🔍 Trying ETH network for token:', request.tokenAddress);
+            decimals = await tokenContract.decimals();
+            console.log('✅ ETH token decimals:', decimals);
+            activeWallet = ethWallet; // Use ETH wallet for transaction
+            
+          } catch (ethError) {
+            console.log('❌ Both networks failed, using fallback decimals');
+            
+            // Fallback decimals based on common tokens
+            const commonTokenDecimals: { [key: string]: number } = {
+              '0x55d398326f99059fF775485246999027B3197955': 18, // USDT BSC
+              '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48': 6,  // USDC ETH
+              '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d': 18, // USDC BSC
+              '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3': 18, // DAI BSC
+              '0x6B175474E89094C44Da98b954EedeAC495271d0F': 18, // DAI ETH
+            };
+            
+            decimals = commonTokenDecimals[request.tokenAddress] || 18;
+            console.log('🔧 Using fallback decimals:', decimals, 'for token:', request.tokenAddress);
+            
+            // Use BSC as default for transaction
+            const bscProvider = new ethers.JsonRpcProvider('https://bsc-dataseed1.binance.org/');
+            activeWallet = wallet.connect(bscProvider);
+            tokenContract = new ethers.Contract(
+              request.tokenAddress,
+              ['function transfer(address to, uint256 amount) returns (bool)'],
+              activeWallet
+            );
+          }
+        }
+
         const amount = ethers.parseUnits(request.amount, decimals);
 
         transaction = await tokenContract.transfer(request.toAddress, amount, {
@@ -108,10 +169,13 @@ export class TransactionService {
           gasLimit: request.gasLimit ? BigInt(request.gasLimit) : undefined,
         });
       } else {
-        // Gửi ETH
+        // Gửi BNB (native token) - sử dụng BSC network
+        const bscProvider = new ethers.JsonRpcProvider('https://bsc-dataseed1.binance.org/');
+        const activeWallet = wallet.connect(bscProvider);
         const amount = ethers.parseEther(request.amount);
         
-        transaction = await wallet.sendTransaction({
+        console.log('🔍 Sending BNB on BSC network');
+        transaction = await activeWallet.sendTransaction({
           to: request.toAddress,
           value: amount,
           gasPrice: request.gasPrice ? ethers.parseUnits(request.gasPrice, 'gwei') : undefined,

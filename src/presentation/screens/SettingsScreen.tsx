@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
+  Switch,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ import { ServiceLocator } from '../../core/di/service_locator';
 import { LogoutWalletUseCase } from '../../domain/usecases/wallet_usecases';
 import { CacheService } from '../../data/services/cache_service';
 import { useThemeColors, useTheme } from '../../core/theme';
+import { HybridBalanceService } from '../../data/services/hybrid_balance_service';
 import { LogoComponent } from '../components/LogoComponent';
 
 type SettingsScreenNavigationProp = CompositeNavigationProp<
@@ -40,6 +42,36 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSecurity = () => {
     navigation.navigate('Security');
+  };
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  useEffect(() => {
+    const loadNotificationSettings = async () => {
+      try {
+        const hybridService = HybridBalanceService.getInstance();
+        const isEnabled = await hybridService.getNotificationSettings();
+        setNotificationsEnabled(isEnabled.enabled);
+      } catch (error) {
+        console.log('Error loading notification settings:', error);
+      }
+    };
+    loadNotificationSettings();
+  }, []);
+
+  const handleNotificationToggle = async (value: boolean) => {
+    try {
+      const hybridService = HybridBalanceService.getInstance();
+      if (value) {
+        await hybridService.enableNotifications();
+      } else {
+        await hybridService.disableNotifications();
+      }
+      setNotificationsEnabled(value);
+    } catch (error) {
+      console.log('Error toggling notifications:', error);
+      Alert.alert('Lỗi', 'Không thể thay đổi cài đặt thông báo');
+    }
   };
 
   const handleSupport = () => {
@@ -149,6 +181,25 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             handleSecurity,
             'fingerprint'
           )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Thông báo</Text>
+          <View style={styles.settingItem}>
+            <View style={styles.settingContent}>
+              <MaterialIcons name="notifications" size={24} color={colors.primary} />
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>Thông báo biến động số dư</Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>Nhận thông báo khi có giao dịch</Text>
+              </View>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={handleNotificationToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '40' }}
+              thumbColor={notificationsEnabled ? colors.primary : colors.textSecondary}
+            />
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -294,6 +345,15 @@ const createStyles = (colors: any) => StyleSheet.create({
   settingArrow: {
     fontSize: 20,
     color: colors.textSecondary,
+  },
+  settingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  settingTextContainer: {
+    flex: 1,
+    marginLeft: 12,
   },
   infoItem: {
     flexDirection: 'row',

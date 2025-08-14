@@ -4,8 +4,8 @@
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -24,12 +24,10 @@
     "ethers": "^6.13.2",
     "events": "^3.3.0",
     "expo": "~53.0.0",
-    "expo-analytics-segment": "^11.2.1",
     "expo-clipboard": "~7.1.5",
+    "expo-constants": "~17.1.7",
     "expo-crypto": "~14.1.5",
-    "expo-file-system": "~18.1.11",
     "expo-local-authentication": "~16.0.5",
-    "expo-media-library": "~17.1.7",
     "expo-secure-store": "~14.2.3",
     "expo-status-bar": "~2.2.3",
     "get-it": "^8.6.5",
@@ -54,7 +52,10 @@
     "stream-http": "^3.2.0",
     "url": "^0.11.4",
     "util": "^0.12.5",
-    "expo-constants": "~17.1.7"
+    "expo-notifications": "~0.31.4",
+    "expo-device": "~7.1.4",
+    "expo-task-manager": "~13.1.6",
+    "expo-background-fetch": "~13.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

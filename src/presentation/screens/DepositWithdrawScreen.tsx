@@ -15,8 +15,7 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../core/theme';
 import { DashboardBloc } from '../blocs/dashboard_bloc';
@@ -452,66 +451,13 @@ export const DepositWithdrawScreen: React.FC = () => {
     handleCopyText(transactionId, 'Mã giao dịch');
   };
 
-  // QR Code save functionality - Lưu trực tiếp vào thư viện ảnh
+  // QR Code save functionality - Chỉ hiển thị hướng dẫn (tuân thủ Google Play policy)
   const handleSaveQRCode = async () => {
-    try {
-      // Yêu cầu quyền truy cập thư viện ảnh
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          'Cần quyền truy cập',
-          'Ứng dụng cần quyền truy cập thư viện ảnh để lưu QR code. Vui lòng cấp quyền trong Cài đặt.',
-          [
-            { text: 'Hủy', style: 'cancel' },
-            { text: 'Mở Cài đặt', onPress: () => {
-              Alert.alert('Hướng dẫn', 'Vui lòng vào Cài đặt > Finan > Ảnh và cấp quyền truy cập.');
-            }}
-          ]
-        );
-        return;
-      }
-
-      // Tải và lưu ảnh QR code (không hiển thị loading popup)
-      const fileUri = FileSystem.documentDirectory + `qr_code_${transactionId}.png`;
-      const downloadResult = await FileSystem.downloadAsync(qrCodeUrl, fileUri);
-      
-      if (downloadResult.status === 200) {
-        // Lưu ảnh vào thư viện
-        const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
-        
-        // Tạo album riêng cho Finan (tùy chọn)
-        try {
-          const album = await MediaLibrary.getAlbumAsync('Finan Wallet');
-          if (album == null) {
-            await MediaLibrary.createAlbumAsync('Finan Wallet', asset, false);
-          } else {
-            await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-          }
-        } catch (albumError) {
-          console.log('Không thể tạo album, lưu vào thư viện chính:', albumError);
-        }
-
-        // Xóa file tạm
-        await FileSystem.deleteAsync(fileUri, { idempotent: true });
-
-        // Chỉ hiển thị 1 popup thành công duy nhất
-        Alert.alert(
-          'Lưu thành công! 🎉',
-          `QR code đã được lưu vào thư viện ảnh.\n\nMã giao dịch: ${transactionId}`,
-          [{ text: 'OK' }]
-        );
-      } else {
-        throw new Error('Không thể tải ảnh QR code');
-      }
-    } catch (error) {
-      console.error('Lỗi lưu QR code:', error);
-      Alert.alert(
-        'Lỗi lưu ảnh',
-        'Không thể lưu QR code. Bạn có thể chụp màn hình để lưu.',
-        [{ text: 'OK' }]
-      );
-    }
+    Alert.alert(
+      'Lưu QR Code 📱',
+      `Để lưu QR code, bạn có thể:\n\n• Chụp màn hình (Screenshot)\n• Sử dụng tính năng Chia sẻ bên dưới\n\nMã giao dịch: ${transactionId}`,
+      [{ text: 'Đã hiểu' }]
+    );
   };
 
   // QR Code share functionality

@@ -9,6 +9,7 @@ import { ServiceLocator } from './src/core/di/service_locator';
 import { ThemeProvider, useTheme } from './src/core/theme';
 import { MoralisApiService } from './src/data/services/moralis_api_service';
 import { UTMTrackingService } from './src/core/services/utm_tracking_service';
+import { HybridBalanceService } from './src/data/services/hybrid_balance_service';
 
 // Initialize dependency injection synchronously
 ServiceLocator.init();
@@ -83,10 +84,11 @@ if (__DEV__) {
 const ThemedApp: React.FC = () => {
   const { theme } = useTheme();
   
-  // Initialize UTM tracking khi app khởi động
+  // Initialize UTM tracking và Balance Notifications khi app khởi động
   useEffect(() => {
-    const initializeTracking = async () => {
+    const initializeServices = async () => {
       try {
+        // Initialize UTM tracking
         await UTMTrackingService.initialize();
         console.log('✅ UTM Tracking initialized successfully');
         
@@ -95,12 +97,35 @@ const ThemedApp: React.FC = () => {
           const summary = await UTMTrackingService.getAttributionSummary();
           console.log(summary);
         }
+        
+        // Initialize Balance Notification System
+        console.log('🔔 Initializing Balance Notification System...');
+        const hybridBalanceService = HybridBalanceService.getInstance();
+        const initialized = await hybridBalanceService.initialize();
+        
+        if (initialized) {
+          console.log('✅ Balance Notification System initialized successfully');
+          
+          // Auto-start monitoring if enabled in settings
+          const settings = await hybridBalanceService.getSettings();
+          if (settings.enabled) {
+            const started = await hybridBalanceService.startMonitoring();
+            if (started) {
+              console.log('✅ Balance monitoring started automatically');
+            } else {
+              console.warn('⚠️ Balance monitoring failed to start');
+            }
+          }
+        } else {
+          console.warn('⚠️ Balance Notification System failed to initialize');
+        }
+        
       } catch (error) {
-        console.error('❌ UTM Tracking initialization failed:', error);
+        console.error('❌ Services initialization failed:', error);
       }
     };
     
-    initializeTracking();
+    initializeServices();
   }, []);
   
   return (
