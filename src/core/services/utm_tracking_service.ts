@@ -4,6 +4,16 @@ import { Linking, Platform } from 'react-native';
 import { AnalyticsApiService } from '../../data/services/analytics_api_service';
 import Constants from 'expo-constants';
 
+// Import Install Referrer cho Android
+let PlayInstallReferrer: any = null;
+try {
+  if (Platform.OS === 'android') {
+    PlayInstallReferrer = require('react-native-play-install-referrer').default;
+  }
+} catch (error) {
+  console.warn('⚠️ Play Install Referrer not available:', error);
+}
+
 export interface UTMData {
   utm_source?: string;      // facebook, telegram, tiktok, google
   utm_medium?: string;      // social, cpc, referral, organic
@@ -50,23 +60,69 @@ export class UTMTrackingService {
    */
   private static async trackFirstInstall() {
     try {
-      // Lấy initial URL nếu app được mở từ deep link
-      const initialUrl = await Linking.getInitialURL();
-      let utmData: UTMData;
+      let utmData: UTMData | null = null;
+      let utmSource = 'unknown';
 
-      if (initialUrl) {
-        // Parse UTM từ deep link
-        const parsedUTM = this.parseUTMFromURL(initialUrl);
-        utmData = {
-          ...parsedUTM,
-          install_date: new Date().toISOString(),
-          platform: Platform.OS,
-          is_first_install: true
-        };
-        
-        console.log('📊 Install tracked with UTM from deep link:', utmData);
+      // 🎯 Ưu tiên 1: Đọc Install Referrer từ Google Play (Android)
+      if (Platform.OS === 'android' && PlayInstallReferrer) {
+        try {
+          console.log('📊 [DEBUG] Attempting to get Play Install Referrer...');
+          console.log('📊 [DEBUG] PlayInstallReferrer available:', !!PlayInstallReferrer);
+          const referrerInfo = await PlayInstallReferrer.getInstallReferrer();
+          console.log('📊 [DEBUG] Full referrerInfo:', JSON.stringify(referrerInfo, null, 2));
+          
+          if (referrerInfo && referrerInfo.installReferrer) {
+            console.log('📊 Raw Install Referrer:', referrerInfo.installReferrer);
+            
+            // Decode referrer và parse UTM
+            const decodedReferrer = decodeURIComponent(referrerInfo.installReferrer);
+            console.log('📊 Decoded Install Referrer:', decodedReferrer);
+            
+            // Parse UTM từ referrer (format: utm_source=...&utm_medium=...)
+            const parsedUTM = this.parseUTMFromReferrer(decodedReferrer);
+            console.log('📊 [DEBUG] Parsed UTM from referrer:', JSON.stringify(parsedUTM, null, 2));
+            
+            if (parsedUTM.utm_source) {
+              utmData = {
+                ...parsedUTM,
+                install_date: new Date().toISOString(),
+                platform: Platform.OS,
+                is_first_install: true
+              };
+              utmSource = 'play_install_referrer';
+              console.log('📊 Install tracked with UTM from Play Install Referrer:', utmData);
+            } else {
+              console.warn('⚠️ [DEBUG] No utm_source found in parsed UTM data');
+            }
+          }
+        } catch (referrerError) {
+          console.warn('⚠️ Failed to get Play Install Referrer:', referrerError);
+          console.warn('⚠️ [DEBUG] Referrer error details:', JSON.stringify(referrerError, null, 2));
+        }
       } else {
-        // Organic install (không có UTM)
+        console.warn('⚠️ [DEBUG] Install Referrer not available - Platform:', Platform.OS, 'PlayInstallReferrer:', !!PlayInstallReferrer);
+      }
+
+      // 🎯 Ưu tiên 2: Fallback - Lấy initial URL nếu app được mở từ deep link
+      if (!utmData) {
+        const initialUrl = await Linking.getInitialURL();
+        
+        if (initialUrl) {
+          // Parse UTM từ deep link
+          const parsedUTM = this.parseUTMFromURL(initialUrl);
+          utmData = {
+            ...parsedUTM,
+            install_date: new Date().toISOString(),
+            platform: Platform.OS,
+            is_first_install: true
+          };
+          utmSource = 'deep_link';
+          console.log('📊 Install tracked with UTM from deep link:', utmData);
+        }
+      }
+
+      // 🎯 Ưu tiên 3: Organic install (không có UTM)
+      if (!utmData) {
         utmData = {
           utm_source: 'organic',
           utm_medium: 'app_store_search',
@@ -75,7 +131,7 @@ export class UTMTrackingService {
           platform: Platform.OS,
           is_first_install: true
         };
-        
+        utmSource = 'organic';
         console.log('📊 Organic install tracked:', utmData);
       }
 
@@ -108,6 +164,28 @@ export class UTMTrackingService {
       };
     } catch (error) {
       console.error('❌ Parse UTM error:', error);
+      return {};
+    }
+  }
+
+  /**
+   * 🔗 Parse UTM parameters từ Install Referrer string
+   */
+  static parseUTMFromReferrer(referrer: string): Partial<UTMData> {
+    try {
+      // Referrer format: "utm_source=tele&utm_medium=cpc&utm_campaign=crypto_launch&utm_content=video_ad"
+      const params = new URLSearchParams(referrer);
+      
+      return {
+        utm_source: params.get('utm_source') || undefined,
+        utm_medium: params.get('utm_medium') || undefined,
+        utm_campaign: params.get('utm_campaign') || undefined,
+        utm_content: params.get('utm_content') || undefined,
+        utm_term: params.get('utm_term') || undefined,
+        referral_code: params.get('ref') || params.get('referral_code') || undefined,
+      };
+    } catch (error) {
+      console.error('❌ Parse UTM from referrer error:', error);
       return {};
     }
   }
