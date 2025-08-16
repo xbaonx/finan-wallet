@@ -6,13 +6,15 @@ import { GetWalletBalanceUseCase, GetCurrentWalletUseCase, RefreshWalletDataUseC
 export class DashboardBloc {
   private _state: DashboardState = new DashboardInitial();
   private _listeners: ((state: DashboardState) => void)[] = [];
-  private globalTokenService = GlobalTokenService.getInstance();
+  private globalTokenService: GlobalTokenService;
 
   constructor(
     private getWalletBalanceUseCase: GetWalletBalanceUseCase,
     private getCurrentWalletUseCase: GetCurrentWalletUseCase,
-    private refreshWalletDataUseCase: RefreshWalletDataUseCase
+    private refreshWalletDataUseCase: RefreshWalletDataUseCase,
+    globalTokenService: GlobalTokenService
   ) {
+    this.globalTokenService = globalTokenService;
     // Đăng ký lắng nghe cập nhật từ GlobalTokenService
     this.globalTokenService.addListener(this._handleTokenBalanceUpdated.bind(this));
   }

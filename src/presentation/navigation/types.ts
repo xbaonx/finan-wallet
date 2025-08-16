@@ -10,6 +10,7 @@ export type RootStackParamList = {
   Login: undefined;
   Security: undefined;
   ChangePin: undefined;
+  BackupWallet: undefined;
 };
 
 export type TabParamList = {

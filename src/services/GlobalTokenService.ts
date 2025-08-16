@@ -1,7 +1,6 @@
 import { WalletBalance } from '../domain/entities/token_entity';
 import { TokenRepository } from '../domain/repositories/token_repository';
 import { WalletRepository } from '../domain/repositories/wallet_repository';
-import { ServiceLocator } from '../core/di/service_locator';
 
 /**
  * Service toàn cục để quản lý dữ liệu token và tối ưu hóa API call
@@ -18,10 +17,12 @@ export class GlobalTokenService {
   private isFetching = false;
   private lastWalletAddress = '';
   
-  private constructor() {
-    // Lấy repository từ ServiceLocator
-    this.tokenRepository = ServiceLocator.get('TokenRepository');
-    this.walletRepository = ServiceLocator.get('WalletRepository');
+  private constructor(
+    tokenRepository: TokenRepository,
+    walletRepository: WalletRepository
+  ) {
+    this.tokenRepository = tokenRepository;
+    this.walletRepository = walletRepository;
     
     // Tự động làm mới cache theo định kỳ
     setInterval(() => this.refreshCache(), 300000); // mỗi 5 phút
@@ -30,9 +31,15 @@ export class GlobalTokenService {
   /**
    * Lấy instance duy nhất của GlobalTokenService
    */
-  public static getInstance(): GlobalTokenService {
+  public static getInstance(
+    tokenRepository?: TokenRepository,
+    walletRepository?: WalletRepository
+  ): GlobalTokenService {
     if (!GlobalTokenService.instance) {
-      GlobalTokenService.instance = new GlobalTokenService();
+      if (!tokenRepository || !walletRepository) {
+        throw new Error('TokenRepository and WalletRepository are required for first initialization');
+      }
+      GlobalTokenService.instance = new GlobalTokenService(tokenRepository, walletRepository);
     }
     return GlobalTokenService.instance;
   }

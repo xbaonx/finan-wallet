@@ -21,7 +21,8 @@
       "infoPlist": {
         "NSFaceIDUsageDescription": "Finan Wallet sử dụng Face ID để bảo mật và xác thực truy cập vào ví tiền điện tử của bạn.",
         "NSCameraUsageDescription": "Ứng dụng cần quyền truy cập camera để quét QR code.",
-        "NSPhotoLibraryUsageDescription": "Ứng dụng cần quyền truy cập thư viện ảnh để lưu QR code."
+        "NSPhotoLibraryUsageDescription": "Ứng dụng cần quyền truy cập thư viện ảnh để lưu QR code.",
+        "UIBackgroundModes": ["fetch"]
       }
     },
     "android": {

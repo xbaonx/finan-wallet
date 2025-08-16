@@ -14,6 +14,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
+import { useThemeColors } from '../../core/theme';
 import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
 import { CreateWalletEvent } from '../blocs/wallet_onboarding_event';
 import { WalletOnboardingState, WalletOnboardingLoading, WalletCreatedState, WalletOnboardingError } from '../blocs/wallet_onboarding_state';
@@ -26,6 +27,8 @@ interface Props {
 }
 
 export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [walletName, setWalletName] = useState('Ví của tôi');
   const [isLoading, setIsLoading] = useState(false);
   const [mnemonic, setMnemonic] = useState<string[]>([]);
@@ -112,11 +115,11 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
 
   if (showMnemonic) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <Text style={styles.title}>Sao lưu cụm từ khôi phục</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.text }]}>Sao lưu cụm từ khôi phục</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Ghi lại 12 từ này theo đúng thứ tự và bảo quản an toàn
             </Text>
           </View>
@@ -132,27 +135,27 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
 
           <View style={styles.mnemonicContainer}>
             {mnemonic.map((word, index) => (
-              <View key={index} style={styles.wordContainer}>
-                <Text style={styles.wordNumber}>{index + 1}</Text>
-                <Text style={styles.word}>{word}</Text>
+              <View key={index} style={[styles.wordContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.wordNumber, { color: colors.textSecondary }]}>{index + 1}</Text>
+                <Text style={[styles.word, { color: colors.text }]}>{word}</Text>
               </View>
             ))}
           </View>
 
           <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
+            style={[styles.button, styles.secondaryButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={copyMnemonic}
             activeOpacity={0.8}
           >
-            <Text style={styles.secondaryButtonText}>📋 Sao chép</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>📋 Sao chép</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
+            style={[styles.button, styles.primaryButton, { backgroundColor: colors.primary }]}
             onPress={handleContinue}
             activeOpacity={0.8}
           >
-            <Text style={styles.primaryButtonText}>Tôi đã sao lưu</Text>
+            <Text style={[styles.primaryButtonText, { color: colors.surface }]}>Tôi đã sao lưu</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -160,7 +163,7 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         <View style={styles.header}>
           <Image 
@@ -168,20 +171,20 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.logo} 
             resizeMode="contain"
           />
-          <Text style={styles.title}>Tạo ví mới</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>Tạo ví mới</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Tạo một ví mã hóa mới để bắt đầu quản lý tài sản của bạn
           </Text>
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Tên ví</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Tên ví</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             value={walletName}
             onChangeText={setWalletName}
             placeholder="Nhập tên ví"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
 
@@ -195,25 +198,25 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
+            style={[styles.button, styles.primaryButton, { backgroundColor: colors.primary }]}
             onPress={handleCreateWallet}
             disabled={isLoading}
             activeOpacity={0.8}
           >
             {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={styles.primaryButtonText}>Tạo Ví</Text>
+              <Text style={[styles.primaryButtonText, { color: colors.surface }]}>Tạo Ví</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
+            style={[styles.button, styles.secondaryButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => navigation.goBack()}
             disabled={isLoading}
             activeOpacity={0.8}
           >
-            <Text style={styles.secondaryButtonText}>Quay lại</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Quay lại</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -221,13 +224,14 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
+    paddingHorizontal: 24,
   },
   content: {
     flex: 1,
@@ -247,13 +251,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.text,
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
     lineHeight: 24,
+    textAlign: 'center',
   },
   form: {
     marginBottom: 24,
@@ -261,34 +267,36 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 8,
   },
   input: {
     height: 56,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#1f2937',
-    backgroundColor: '#f9fafb',
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   infoBox: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 32,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e40af',
+    color: colors.primary,
     marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
-    color: '#1e40af',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   warningBox: {
@@ -296,6 +304,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#f59e0b',
   },
   warningTitle: {
     fontSize: 16,
@@ -318,20 +328,22 @@ const styles = StyleSheet.create({
     width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   wordNumber: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginRight: 8,
     minWidth: 20,
   },
   word: {
     fontSize: 16,
-    color: '#1f2937',
+    color: colors.text,
     fontWeight: '500',
   },
   buttonContainer: {
@@ -345,21 +357,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   primaryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
   },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.surface,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
 });

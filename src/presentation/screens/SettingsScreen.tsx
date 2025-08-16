@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   Switch,
+  Linking,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,7 +38,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { themeMode, setThemeMode } = useTheme();
   const styles = createStyles(colors);
   const handleBackupWallet = () => {
-    Alert.alert('Thông báo', 'Tính năng sao lưu ví sẽ được thêm trong phiên bản tiếp theo');
+    navigation.navigate('BackupWallet');
   };
 
   const handleSecurity = () => {
@@ -75,7 +76,23 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSupport = () => {
-    Alert.alert('Hỗ trợ', 'Liên hệ: support@finan.vn');
+    Alert.alert(
+      'Liên hệ hỗ trợ',
+      'Liên hệ Zalo: 0899455888 để được hỗ trợ nhanh nhất',
+      [
+        { text: 'Đóng', style: 'cancel' },
+        {
+          text: 'Mở Zalo',
+          onPress: () => {
+            // Open Zalo with phone number
+            const zaloUrl = 'https://zalo.me/0899455888';
+            Linking.openURL(zaloUrl).catch(() => {
+              Alert.alert('Lỗi', 'Không thể mở Zalo. Vui lòng liên hệ: 0899455888');
+            });
+          }
+        }
+      ]
+    );
   };
 
   const handleThemeToggle = () => {
@@ -160,7 +177,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.header}>
           <View style={styles.headerContent}>
             <LogoComponent size="medium" style={{ marginRight: 12 }} />
             <Text style={[styles.title, { color: colors.text }]}>Cài đặt</Text>
@@ -280,7 +297,6 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 20,
     paddingBottom: 16,
   },
   headerContent: {

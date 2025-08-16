@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
+import { useThemeColors } from '../../core/theme';
 
 type WelcomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Welcome'>;
 
@@ -17,6 +18,9 @@ interface Props {
 }
 
 export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
+  
   const handleCreateWallet = () => {
     navigation.navigate('CreateWallet');
   };
@@ -26,7 +30,7 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         {/* Logo/Icon Section */}
         <View style={styles.logoSection}>
@@ -35,14 +39,14 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.logo} 
             resizeMode="contain"
           />
-          <Text style={styles.appName}>Finan</Text>
-          <Text style={styles.subtitle}>Ví tiền mã hóa an toàn</Text>
+          <Text style={[styles.appName, { color: colors.text }]}>Finan</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Ví tiền mã hóa an toàn</Text>
         </View>
 
         {/* Welcome Message */}
         <View style={styles.messageSection}>
-          <Text style={styles.welcomeTitle}>Chào mừng đến với Finan</Text>
-          <Text style={styles.welcomeDescription}>
+          <Text style={[styles.welcomeTitle, { color: colors.text }]}>Chào mừng đến với Finan</Text>
+          <Text style={[styles.welcomeDescription, { color: colors.textSecondary }]}>
             Quản lý tài sản mã hóa của bạn một cách an toàn và dễ dàng
           </Text>
         </View>
@@ -50,27 +54,27 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* Action Buttons */}
         <View style={styles.buttonSection}>
           <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
+            style={[styles.button, styles.primaryButton, { backgroundColor: colors.primary }]}
             onPress={handleCreateWallet}
             activeOpacity={0.8}
           >
-            <Text style={styles.primaryButtonText}>Tạo Ví Mới</Text>
+            <Text style={[styles.primaryButtonText, { color: colors.surface }]}>Tạo Ví Mới</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
+            style={[styles.button, styles.secondaryButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleImportWallet}
             activeOpacity={0.8}
           >
-            <Text style={styles.secondaryButtonText}>Khôi Phục Ví</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Khôi Phục Ví</Text>
           </TouchableOpacity>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             Bằng cách tiếp tục, bạn đồng ý với{' '}
-            <Text style={styles.linkText}>Điều khoản sử dụng</Text>
+            <Text style={[styles.linkText, { color: colors.primary }]}>Điều khoản sử dụng</Text>
           </Text>
         </View>
       </View>
@@ -78,10 +82,10 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -100,12 +104,12 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   messageSection: {
@@ -115,13 +119,13 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   welcomeDescription: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -136,22 +140,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   primaryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
   },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.surface,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   footer: {
     paddingBottom: 20,
@@ -159,12 +163,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
   },
   linkText: {
-    color: '#3b82f6',
+    color: colors.primary,
     textDecorationLine: 'underline',
   },
 });

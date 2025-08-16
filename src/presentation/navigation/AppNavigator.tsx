@@ -14,6 +14,7 @@ import { BiometricPromptScreen } from '../screens/BiometricPromptScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { SecurityScreen } from '../screens/SecurityScreen';
 import { ChangePinScreen } from '../screens/ChangePinScreen';
+import { BackupWalletScreen } from '../screens/BackupWalletScreen';
 
 import { TabNavigator } from './TabNavigator';
 
@@ -163,6 +164,7 @@ export const AppNavigator: React.FC = () => {
         {/* Settings screens */}
         <Stack.Screen name="Security" component={SecurityScreen} />
         <Stack.Screen name="ChangePin" component={ChangePinScreen} />
+        <Stack.Screen name="BackupWallet" component={BackupWalletScreen} />
 
       </Stack.Navigator>
     </NavigationContainer>

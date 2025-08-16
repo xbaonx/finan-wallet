@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
+import { useThemeColors } from '../../core/theme';
 import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
 import { ImportWalletEvent } from '../blocs/wallet_onboarding_event';
 import { WalletOnboardingState, WalletOnboardingLoading, WalletImportedState, WalletOnboardingError } from '../blocs/wallet_onboarding_state';
@@ -24,6 +25,8 @@ interface Props {
 }
 
 export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [walletName, setWalletName] = useState('Ví đã khôi phục');
   const [mnemonic, setMnemonic] = useState('');
   const [mnemonicWords, setMnemonicWords] = useState<string[]>(Array(12).fill(''));
@@ -122,40 +125,40 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderTextInput = () => (
     <View style={styles.inputContainer}>
-      <Text style={styles.label}>Cụm từ khôi phục (12 từ)</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Cụm từ khôi phục (12 từ)</Text>
       <TextInput
-        style={[styles.textArea]}
+        style={[styles.textArea, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
         value={mnemonic}
         onChangeText={setMnemonic}
         placeholder="Nhập 12 từ cách nhau bởi dấu cách..."
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={colors.textSecondary}
         multiline
         numberOfLines={4}
         textAlignVertical="top"
       />
       <TouchableOpacity
-        style={styles.pasteButton}
+        style={[styles.pasteButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
         onPress={pasteMnemonic}
         activeOpacity={0.8}
       >
-        <Text style={styles.pasteButtonText}>📋 Dán</Text>
+        <Text style={[styles.pasteButtonText, { color: colors.text }]}>📋 Dán</Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderGridInput = () => (
     <View style={styles.inputContainer}>
-      <Text style={styles.label}>Cụm từ khôi phục</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Cụm từ khôi phục</Text>
       <View style={styles.wordsGrid}>
         {mnemonicWords.map((word, index) => (
           <View key={index} style={styles.wordInputContainer}>
-            <Text style={styles.wordNumber}>{index + 1}</Text>
+            <Text style={[styles.wordNumber, { color: colors.textSecondary }]}>{index + 1}</Text>
             <TextInput
-              style={styles.wordInput}
+              style={[styles.wordInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
               value={word}
               onChangeText={(text) => handleWordChange(index, text)}
               placeholder={`Từ ${index + 1}`}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -166,38 +169,39 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Khôi phục ví</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>Khôi phục ví</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Nhập cụm từ khôi phục 12 từ để khôi phục ví của bạn
           </Text>
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Tên ví</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Tên ví</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             value={walletName}
             onChangeText={setWalletName}
             placeholder="Nhập tên ví"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
 
-        <View style={styles.inputModeSelector}>
+        <View style={[styles.inputModeSelector, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
             style={[
               styles.modeButton,
-              inputMode === 'text' && styles.activeModeButton
+              inputMode === 'text' && [styles.activeModeButton, { backgroundColor: colors.background }]
             ]}
             onPress={() => setInputMode('text')}
             activeOpacity={0.8}
           >
             <Text style={[
               styles.modeButtonText,
-              inputMode === 'text' && styles.activeModeButtonText
+              { color: colors.textSecondary },
+              inputMode === 'text' && [styles.activeModeButtonText, { color: colors.text }]
             ]}>
               Nhập văn bản
             </Text>
@@ -205,14 +209,15 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             style={[
               styles.modeButton,
-              inputMode === 'grid' && styles.activeModeButton
+              inputMode === 'grid' && [styles.activeModeButton, { backgroundColor: colors.background }]
             ]}
             onPress={() => setInputMode('grid')}
             activeOpacity={0.8}
           >
             <Text style={[
               styles.modeButtonText,
-              inputMode === 'grid' && styles.activeModeButtonText
+              { color: colors.textSecondary },
+              inputMode === 'grid' && [styles.activeModeButtonText, { color: colors.text }]
             ]}>
               Nhập từng từ
             </Text>
@@ -221,34 +226,34 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
 
         {inputMode === 'text' ? renderTextInput() : renderGridInput()}
 
-        <View style={styles.warningBox}>
-          <Text style={styles.warningTitle}>🔒 Bảo mật</Text>
-          <Text style={styles.warningText}>
+        <View style={[styles.warningBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.warningTitle, { color: colors.primary }]}>🔒 Bảo mật</Text>
+          <Text style={[styles.warningText, { color: colors.textSecondary }]}>
             Cụm từ khôi phục của bạn sẽ được mã hóa và lưu trữ an toàn trên thiết bị này.
           </Text>
         </View>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
+            style={[styles.button, styles.primaryButton, { backgroundColor: colors.primary }]}
             onPress={handleImportWallet}
             disabled={isLoading}
             activeOpacity={0.8}
           >
             {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={styles.primaryButtonText}>Khôi phục ví</Text>
+              <Text style={[styles.primaryButtonText, { color: colors.surface }]}>Khôi phục ví</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
+            style={[styles.button, styles.secondaryButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => navigation.goBack()}
             disabled={isLoading}
             activeOpacity={0.8}
           >
-            <Text style={styles.secondaryButtonText}>Quay lại</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Quay lại</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -256,10 +261,10 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -272,12 +277,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
     lineHeight: 24,
   },
   form: {
@@ -286,25 +291,27 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 8,
   },
   input: {
     height: 56,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#1f2937',
-    backgroundColor: '#f9fafb',
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   inputModeSelector: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 4,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modeButton: {
     flex: 1,
@@ -313,7 +320,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeModeButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -323,22 +330,22 @@ const styles = StyleSheet.create({
   modeButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: colors.textSecondary,
   },
   activeModeButtonText: {
-    color: '#374151',
+    color: colors.text,
   },
   inputContainer: {
     marginBottom: 24,
   },
   textArea: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1f2937',
-    backgroundColor: '#f9fafb',
+    color: colors.text,
+    backgroundColor: colors.surface,
     minHeight: 120,
   },
   pasteButton: {
@@ -346,12 +353,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.surface,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   pasteButtonText: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.text,
     fontWeight: '500',
   },
   wordsGrid: {
@@ -365,35 +374,37 @@ const styles = StyleSheet.create({
   },
   wordNumber: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginBottom: 4,
     marginLeft: 4,
   },
   wordInput: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 16,
-    color: '#1f2937',
-    backgroundColor: '#f9fafb',
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   warningBox: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 32,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   warningTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e40af',
+    color: colors.primary,
     marginBottom: 8,
   },
   warningText: {
     fontSize: 14,
-    color: '#1e40af',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   buttonContainer: {
@@ -407,21 +418,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   primaryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
   },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.surface,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
 });

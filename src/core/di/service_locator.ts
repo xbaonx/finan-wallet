@@ -21,6 +21,7 @@ import {
   ImportWalletUseCase,
   GetWalletUseCase,
   GetWalletCredentialsUseCase,
+  GetWalletMnemonicUseCase,
   LogoutWalletUseCase,
 } from '../../domain/usecases/wallet_usecases';
 
@@ -44,6 +45,7 @@ import {
 import { WalletOnboardingBloc } from '../../presentation/blocs/wallet_onboarding_bloc';
 import { DashboardBloc } from '../../presentation/blocs/dashboard_bloc';
 import { SwapBloc } from '../../presentation/blocs/swap_bloc';
+import { GlobalTokenService } from '../../services/GlobalTokenService';
 
 class ServiceContainer {
   private static instance: ServiceContainer;
@@ -121,6 +123,10 @@ export class ServiceLocator {
       container.get('WalletRepository')
     ));
     
+    container.register('GetWalletMnemonicUseCase', () => new GetWalletMnemonicUseCase(
+      container.get('WalletRepository')
+    ));
+    
     container.register('LogoutWalletUseCase', () => new LogoutWalletUseCase(
       container.get('WalletRepository')
     ));
@@ -180,7 +186,11 @@ export class ServiceLocator {
     container.register('DashboardBloc', () => new DashboardBloc(
       container.get('GetWalletBalanceUseCase'),
       container.get('GetCurrentWalletUseCase'),
-      container.get('RefreshWalletDataUseCase')
+      container.get('RefreshWalletDataUseCase'),
+      GlobalTokenService.getInstance(
+        container.get('TokenRepository'),
+        container.get('WalletRepository')
+      )
     ), false); // Not singleton for BLoCs
     
     container.register('SwapBloc', () => new SwapBloc(

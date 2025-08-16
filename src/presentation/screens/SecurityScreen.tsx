@@ -9,11 +9,14 @@ import {
   Alert,
   Switch,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
+import { useThemeColors } from '../../core/theme';
 import { AuthService } from '../../data/services/auth_service';
 import { GetBiometricInfoUseCase, SetupBiometricUseCase } from '../../domain/usecases/auth_usecases';
+import { LogoComponent } from '../components/LogoComponent';
 
 type SecurityScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Security'>;
 
@@ -23,6 +26,8 @@ interface Props {
 
 export const SecurityScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricType, setBiometricType] = useState('Sinh trắc học');
@@ -107,7 +112,7 @@ export const SecurityScreen: React.FC<Props> = ({ navigation }) => {
     title: string, 
     subtitle: string, 
     onPress: () => void, 
-    icon: string,
+    iconName: string,
     rightComponent?: React.ReactNode
   ) => (
     <TouchableOpacity
@@ -118,42 +123,46 @@ export const SecurityScreen: React.FC<Props> = ({ navigation }) => {
     >
       <View style={styles.settingLeft}>
         <View style={styles.settingIcon}>
-          <Text style={styles.settingIconText}>{icon}</Text>
+          <MaterialIcons name={iconName as any} size={24} color={colors.primary} />
         </View>
         <View style={styles.settingInfo}>
-          <Text style={styles.settingTitle}>{title}</Text>
-          <Text style={styles.settingSubtitle}>{subtitle}</Text>
+          <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
         </View>
       </View>
-      {rightComponent || <Text style={styles.settingArrow}>›</Text>}
+      {rightComponent || <MaterialIcons name="chevron-right" size={20} color={colors.textSecondary} />}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView 
-        style={styles.scrollView} 
+        style={[styles.scrollView, { backgroundColor: colors.background }]} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.header}>
           <TouchableOpacity
-            style={[styles.backButton, { top: Math.max(insets.top + 20, 40) }]}
+            style={styles.backButton}
             onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
           >
-            <Text style={styles.backButtonText}>‹ Quay lại</Text>
+            <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.title}>Bảo mật</Text>
+          <View style={styles.headerContent}>
+            <LogoComponent size="small" style={{ marginRight: 8 }} />
+            <Text style={[styles.title, { color: colors.text }]}>Bảo mật</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Xác thực</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Xác thực</Text>
           
           {renderSettingItem(
             'Đổi mã PIN',
             'Thay đổi mã PIN hiện tại',
             handleChangePIN,
-            '🔢'
+            'pin'
           )}
 
           {renderSettingItem(
@@ -162,30 +171,30 @@ export const SecurityScreen: React.FC<Props> = ({ navigation }) => {
               ? (biometricEnabled ? 'Đã bật' : 'Đã tắt')
               : 'Không khả dụng',
             () => {},
-            '👆',
+            'fingerprint',
             <Switch
               value={biometricEnabled}
               onValueChange={handleToggleBiometric}
               disabled={!biometricAvailable || isLoading}
-              trackColor={{ false: '#E5E5E5', true: '#007AFF' }}
-              thumbColor={biometricEnabled ? '#FFFFFF' : '#FFFFFF'}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.surface}
             />
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tuân thủ</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Tuân thủ</Text>
           
           {renderSettingItem(
             'KYC - Xác minh danh tính',
             'Sắp ra mắt - Tăng cường bảo mật',
             handleKYC,
-            '🆔'
+            'verified-user'
           )}
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.infoText}>
+          <Text style={[styles.infoText, { color: colors.textSecondary, backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
             💡 Mẹo bảo mật: Luôn bật sinh trắc học để bảo vệ ví của bạn tốt hơn.
           </Text>
         </View>
@@ -194,48 +203,44 @@ export const SecurityScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    position: 'relative',
+    borderBottomColor: colors.border,
   },
   backButton: {
-    position: 'absolute',
-    left: 20,
-    top: 20,
-    zIndex: 1,
+    marginRight: 16,
   },
-  backButtonText: {
-    fontSize: 18,
-    color: '#007AFF',
-    fontWeight: '500',
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
-    textAlign: 'center',
-    marginTop: 10,
+    color: colors.text,
   },
   section: {
-    marginTop: 30,
-    paddingHorizontal: 20,
+    marginTop: 32,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666666',
-    marginBottom: 15,
+    color: colors.textSecondary,
+    marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -245,11 +250,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: colors.border,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -260,13 +265,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#e3f2fd',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  settingIconText: {
-    fontSize: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   settingInfo: {
     flex: 1,
@@ -274,30 +278,25 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: colors.text,
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 14,
-    color: '#666666',
-  },
-  settingArrow: {
-    fontSize: 20,
-    color: '#cccccc',
-    fontWeight: '300',
+    color: colors.textSecondary,
   },
   infoSection: {
     marginTop: 30,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   infoText: {
     fontSize: 14,
-    color: '#666666',
-    backgroundColor: '#f8f9fa',
+    color: colors.textSecondary,
+    backgroundColor: colors.surface,
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
+    borderLeftColor: colors.primary,
     lineHeight: 20,
   },
 });

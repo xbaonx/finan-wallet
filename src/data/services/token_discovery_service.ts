@@ -24,6 +24,14 @@ export class TokenDiscoveryService {
   private static readonly STORAGE_KEY = 'discoveredTokens';
   private static readonly BALANCE_SNAPSHOT_KEY = 'balanceSnapshots';
   
+  private tokenRepository: any;
+  private walletRepository: any;
+  
+  constructor(tokenRepository?: any, walletRepository?: any) {
+    this.tokenRepository = tokenRepository;
+    this.walletRepository = walletRepository;
+  }
+  
   /**
    * Discover tokens user có balance > 0 sử dụng existing GlobalTokenService
    */
@@ -32,7 +40,7 @@ export class TokenDiscoveryService {
       console.log('🔍 TokenDiscoveryService: Discovering tokens via Moralis...');
       
       // Reuse existing GlobalTokenService để tận dụng Moralis API
-      const tokenService = GlobalTokenService.getInstance();
+      const tokenService = GlobalTokenService.getInstance(this.tokenRepository, this.walletRepository);
       const walletBalance = await tokenService.getWalletBalance(true); // Force refresh
       
       if (!walletBalance) {

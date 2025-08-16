@@ -47,10 +47,13 @@ export class HybridBalanceService {
   private discoveryInterval: NodeJS.Timeout | null = null;
   
   private constructor() {
-    this.tokenDiscoveryService = new TokenDiscoveryService();
+    const tokenRepository = ServiceLocator.get('TokenRepository');
+    const walletRepository = ServiceLocator.get('WalletRepository') as WalletRepository;
+    
+    this.tokenDiscoveryService = new TokenDiscoveryService(tokenRepository, walletRepository);
     this.balanceMonitoringService = new BalanceMonitoringService();
     this.notificationService = NotificationService.getInstance();
-    this.walletRepository = ServiceLocator.get('WalletRepository');
+    this.walletRepository = walletRepository;
   }
   
   static getInstance(): HybridBalanceService {
@@ -133,8 +136,17 @@ export class HybridBalanceService {
       
       return true;
       
-    } catch (error) {
+    } catch (error: any) {
+      // Graceful handling for Expo Go environment
+      if (error?.message?.includes('Background Fetch has not been configured') || 
+          error?.message?.includes('registerTaskAsync')) {
+        console.log('📱 Running in Expo Go - Background monitoring not available');
+        console.log('ℹ️ Balance monitoring requires development build or production build');
+        return false;
+      }
+      
       console.error('❌ Error starting balance monitoring:', error);
+      console.log('ℹ️ Background monitoring requires development build or production build');
       return false;
     }
   }

@@ -41,6 +41,24 @@ export class GetWalletCredentialsUseCase {
   }
 }
 
+export class GetWalletMnemonicUseCase {
+  constructor(private walletRepository: WalletRepository) {}
+
+  async execute(): Promise<string> {
+    const wallet = await this.walletRepository.getWallet();
+    if (!wallet) {
+      throw new Error('Không tìm thấy ví');
+    }
+    
+    const credentials = await this.walletRepository.getWalletCredentials(wallet.id);
+    if (!credentials) {
+      throw new Error('Không thể lấy thông tin ví');
+    }
+    
+    return credentials.mnemonic;
+  }
+}
+
 export class LogoutWalletUseCase {
   constructor(private walletRepository: WalletRepository) {}
 

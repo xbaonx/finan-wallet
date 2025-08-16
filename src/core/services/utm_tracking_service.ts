@@ -4,14 +4,16 @@ import { Linking, Platform } from 'react-native';
 import { AnalyticsApiService } from '../../data/services/analytics_api_service';
 import Constants from 'expo-constants';
 
-// Import Install Referrer cho Android
+// Import Install Referrer cho Android - chỉ trong native build
 let PlayInstallReferrer: any = null;
-try {
-  if (Platform.OS === 'android') {
+const isExpoGo = Constants.appOwnership === 'expo';
+
+if (Platform.OS === 'android' && !isExpoGo) {
+  try {
     PlayInstallReferrer = require('react-native-play-install-referrer').default;
+  } catch (error) {
+    console.warn('⚠️ Play Install Referrer not available:', error);
   }
-} catch (error) {
-  console.warn('⚠️ Play Install Referrer not available:', error);
 }
 
 export interface UTMData {
