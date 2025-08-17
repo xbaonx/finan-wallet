@@ -10,6 +10,7 @@ import { ThemeProvider, useTheme } from './src/core/theme';
 import { MoralisApiService } from './src/data/services/moralis_api_service';
 import { UTMTrackingService } from './src/core/services/utm_tracking_service';
 import { HybridBalanceService } from './src/data/services/hybrid_balance_service';
+import { FacebookAnalyticsService } from './src/core/services/facebook_analytics_service';
 
 // Initialize dependency injection synchronously
 ServiceLocator.init();
@@ -91,6 +92,10 @@ const ThemedApp: React.FC = () => {
         // Initialize UTM tracking
         await UTMTrackingService.initialize();
         console.log('✅ UTM Tracking initialized successfully');
+        
+        // Initialize Facebook Analytics (disabled for Expo Go)
+        // await FacebookAnalyticsService.initialize();
+        console.log('⚠️ Facebook Analytics disabled for Expo Go compatibility');
         
         // Debug: Print attribution summary
         if (__DEV__) {

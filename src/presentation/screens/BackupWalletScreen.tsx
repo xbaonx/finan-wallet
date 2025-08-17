@@ -13,7 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
-import { useThemeColors } from '../../core/theme';
+import { useTheme } from '../../core/theme';
 import { ServiceLocator } from '../../core/di/service_locator';
 import { GetWalletMnemonicUseCase } from '../../domain/usecases/wallet_usecases';
 import { LogoComponent } from '../components/LogoComponent';
@@ -26,7 +26,8 @@ interface Props {
 
 export const BackupWalletScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const styles = createStyles(colors);
   const [mnemonic, setMnemonic] = useState<string>('');
   const [isRevealed, setIsRevealed] = useState(false);
@@ -96,10 +97,10 @@ export const BackupWalletScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
       >
         <View style={styles.content}>
-          <View style={styles.warningCard}>
-            <MaterialIcons name="warning" size={32} color="#f59e0b" />
-            <Text style={styles.warningTitle}>Quan trọng!</Text>
-            <Text style={styles.warningText}>
+          <View style={[styles.warningCard, { backgroundColor: theme.isDark ? '#451a03' : '#fef3c7', borderColor: theme.isDark ? '#92400e' : '#f59e0b' }]}>
+            <MaterialIcons name="warning" size={32} color={theme.isDark ? '#fed7aa' : '#f59e0b'} />
+            <Text style={[styles.warningTitle, { color: theme.isDark ? '#fed7aa' : '#92400e' }]}>Quan trọng!</Text>
+            <Text style={[styles.warningText, { color: theme.isDark ? '#fed7aa' : '#92400e' }]}>
               Cụm từ khôi phục là cách duy nhất để khôi phục ví của bạn. Hãy lưu trữ nó ở nơi an toàn và không chia sẻ với bất kỳ ai.
             </Text>
           </View>
@@ -202,24 +203,20 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 24,
   },
   warningCard: {
-    backgroundColor: '#fef3c7',
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#f59e0b',
   },
   warningTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#92400e',
     marginTop: 8,
     marginBottom: 8,
   },
   warningText: {
     fontSize: 14,
-    color: '#92400e',
     textAlign: 'center',
     lineHeight: 20,
   },

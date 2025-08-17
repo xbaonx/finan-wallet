@@ -17,6 +17,7 @@ import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
 import { ImportWalletEvent } from '../blocs/wallet_onboarding_event';
 import { WalletOnboardingState, WalletOnboardingLoading, WalletImportedState, WalletOnboardingError } from '../blocs/wallet_onboarding_state';
 import { ServiceLocator } from '../../core/di/service_locator';
+import { FacebookAnalyticsService } from '../../core/services/facebook_analytics_service';
 
 type ImportWalletScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ImportWallet'>;
 
@@ -99,6 +100,14 @@ export const ImportWalletScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     await walletBloc.add(new ImportWalletEvent(finalMnemonic, walletName.trim()));
+    
+    // Track wallet import event with Facebook Analytics
+    try {
+      const facebookAnalytics = FacebookAnalyticsService.getInstance();
+      await facebookAnalytics.trackWalletCreated('imported');
+    } catch (error) {
+      console.error('Facebook Analytics tracking error:', error);
+    }
   };
 
   const handleWordChange = (index: number, word: string) => {

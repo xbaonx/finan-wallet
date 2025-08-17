@@ -8,14 +8,17 @@ import {
   Alert,
   Vibration,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
+import { useThemeColors } from '../../core/theme';
 import { AuthService } from '../../data/services/auth_service';
 import { 
   AuthenticateUseCase, 
   GetBiometricInfoUseCase 
 } from '../../domain/usecases/auth_usecases';
+import { LogoComponent } from '../components/LogoComponent';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -25,6 +28,8 @@ interface Props {
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pinLength, setPinLength] = useState<4 | 6>(6); // Mặc định 6 số
@@ -189,7 +194,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             key={index}
             style={[
               styles.pinDot,
-              index < pin.length && styles.pinDotFilled,
+              { borderColor: colors.border },
+              index < pin.length && [styles.pinDotFilled, { backgroundColor: colors.primary, borderColor: colors.primary }],
             ]}
           />
         ))}
@@ -218,11 +224,11 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 return (
                   <TouchableOpacity
                     key={itemIndex}
-                    style={styles.numberButton}
+                    style={[styles.numberButton, { backgroundColor: colors.surface }]}
                     onPress={handleBackspace}
                     disabled={pin.length === 0 || isLoading}
                   >
-                    <Text style={styles.backspaceText}>⌫</Text>
+                    <MaterialIcons name="backspace" size={24} color={colors.textSecondary} />
                   </TouchableOpacity>
                 );
               }
@@ -230,11 +236,11 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               return (
                 <TouchableOpacity
                   key={itemIndex}
-                  style={styles.numberButton}
+                  style={[styles.numberButton, { backgroundColor: colors.surface }]}
                   onPress={() => handleNumberPress(item)}
                   disabled={pin.length >= pinLength || isLoading}
                 >
-                  <Text style={styles.numberText}>{item}</Text>
+                  <Text style={[styles.numberText, { color: colors.text }]}>{item}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -254,10 +260,13 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top + 20, 40) }]}>
-        <Text style={styles.title}>Mở khóa Finan</Text>
-        <Text style={styles.subtitle}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <LogoComponent size="small" style={{ marginRight: 8 }} />
+          <Text style={[styles.title, { color: colors.text }]}>Mở khóa Finan</Text>
+        </View>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Nhập mã PIN để truy cập ví của bạn
         </Text>
       </View>
@@ -271,18 +280,18 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         {biometricInfo.isEnabled && biometricInfo.isAvailable && (
           <View style={styles.biometricSection}>
             <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>hoặc</Text>
-              <View style={styles.dividerLine} />
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textSecondary }]}>hoặc</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
             </View>
 
             <TouchableOpacity
-              style={styles.biometricButton}
+              style={[styles.biometricButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
               onPress={handleBiometricAuth}
               disabled={isLoading}
             >
               <Text style={styles.biometricIcon}>{getBiometricIcon()}</Text>
-              <Text style={styles.biometricText}>
+              <Text style={[styles.biometricText, { color: colors.text }]}>
                 Sử dụng {biometricInfo.typeName}
               </Text>
             </TouchableOpacity>
@@ -291,35 +300,41 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>
+        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
           Finan Wallet - Bảo mật với mã PIN và sinh trắc học
         </Text>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingHorizontal: 24,
     paddingBottom: 20,
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    color: colors.text,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 22,
   },
   content: {
     flex: 1,
@@ -336,16 +351,16 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     marginHorizontal: 8,
   },
   pinDotFilled: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   numberPad: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 40,
   },
   numberRow: {
     flexDirection: 'row',
@@ -355,37 +370,30 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   numberText: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  backspaceText: {
-    fontSize: 24,
-    color: '#666',
+    color: colors.text,
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 20,
   },
   submitButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: colors.border,
   },
   submitButtonText: {
-    color: '#fff',
+    color: colors.surface,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -401,22 +409,22 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
+    backgroundColor: colors.border,
   },
   dividerText: {
     marginHorizontal: 15,
     fontSize: 14,
-    color: '#999',
+    color: colors.textSecondary,
   },
   biometricButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
   },
   biometricIcon: {
     fontSize: 24,
@@ -424,7 +432,7 @@ const styles = StyleSheet.create({
   },
   biometricText: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     fontWeight: '500',
   },
   footer: {
@@ -434,7 +442,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#999',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

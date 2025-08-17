@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { useTheme } from '../../core/theme';
 
 import { RootStackParamList } from './types';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
@@ -27,6 +28,8 @@ import { AuthService } from '../../data/services/auth_service';
 const Stack = createStackNavigator<RootStackParamList>();
 
 export const AppNavigator: React.FC = () => {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const [isLoading, setIsLoading] = useState(true);
   const [hasWallet, setHasWallet] = useState(false);
   const [hasPinSet, setHasPinSet] = useState(false);
@@ -70,8 +73,8 @@ export const AppNavigator: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -99,11 +102,11 @@ export const AppNavigator: React.FC = () => {
             headerTitle: '',
             headerBackTitleVisible: false,
             headerStyle: {
-              backgroundColor: '#ffffff',
+              backgroundColor: colors.background,
               shadowColor: 'transparent',
               elevation: 0,
             },
-            headerTintColor: '#374151',
+            headerTintColor: colors.text,
           }}
         />
         <Stack.Screen 
@@ -114,11 +117,11 @@ export const AppNavigator: React.FC = () => {
             headerTitle: '',
             headerBackTitleVisible: false,
             headerStyle: {
-              backgroundColor: '#ffffff',
+              backgroundColor: colors.background,
               shadowColor: 'transparent',
               elevation: 0,
             },
-            headerTintColor: '#374151',
+            headerTintColor: colors.text,
           }}
         />
         
@@ -176,10 +179,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
   },
   dashboardPlaceholder: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
 });

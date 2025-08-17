@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
+import { useTheme } from '../../core/theme';
 import { AuthService } from '../../data/services/auth_service';
 import { SetupBiometricUseCase, GetBiometricInfoUseCase } from '../../domain/usecases/auth_usecases';
 
@@ -20,6 +21,9 @@ interface Props {
 }
 
 export const BiometricPromptScreen: React.FC<Props> = ({ navigation }) => {
+  const { theme } = useTheme();
+  const colors = theme.colors;
+  const styles = createStyles(colors);
   const [isLoading, setIsLoading] = useState(false);
   const [biometricInfo, setBiometricInfo] = useState<{
     isAvailable: boolean;
@@ -181,10 +185,10 @@ export const BiometricPromptScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 30,
@@ -207,13 +211,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: colors.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 40,
@@ -234,7 +238,7 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     flex: 1,
   },
   buttonContainer: {
@@ -242,14 +246,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   enableButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 12,
   },
   enableButtonText: {
-    color: '#fff',
+    color: colors.surface,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -259,31 +263,31 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
   },
   skipButtonText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '500',
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: colors.textTertiary,
   },
   note: {
     fontSize: 14,
-    color: '#999',
+    color: colors.textTertiary,
     textAlign: 'center',
     lineHeight: 18,
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 12,
   },
   primaryButtonText: {
-    color: '#fff',
+    color: colors.surface,
     fontSize: 18,
     fontWeight: '600',
   },

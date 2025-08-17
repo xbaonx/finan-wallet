@@ -6,6 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
+  Linking,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
@@ -27,6 +28,10 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleImportWallet = () => {
     navigation.navigate('ImportWallet');
+  };
+
+  const handleTermsPress = () => {
+    Linking.openURL('https://finan.digital/terms');
   };
 
   return (
@@ -74,7 +79,12 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             Bằng cách tiếp tục, bạn đồng ý với{' '}
-            <Text style={[styles.linkText, { color: colors.primary }]}>Điều khoản sử dụng</Text>
+            <Text 
+              style={[styles.linkText, { color: colors.primary }]}
+              onPress={handleTermsPress}
+            >
+              Điều khoản sử dụng
+            </Text>
           </Text>
         </View>
       </View>

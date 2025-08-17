@@ -19,7 +19,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useThemeColors } from '../../core/theme';
+import { useTheme } from '../../core/theme';
 import { SwapBloc } from '../blocs/swap_bloc';
 import { SwapState, SwapInitialState, SwapLoadingState, TokensLoadedState, QuoteLoadingState, QuoteLoadedState, SwapSuccessState, SwapFailedState, SwapErrorState, ApprovingTokenState, TokenApprovedState } from '../blocs/swap_state';
 import { LoadSupportedTokensEvent, GetSwapQuoteEvent, ConfirmSwapEvent, ApproveTokenEvent, ResetSwapEvent, RefreshTokenBalancesEvent } from '../blocs/swap_event';
@@ -45,7 +45,8 @@ interface CoinListItemProps {
 }
 
 const CoinListItem: React.FC<CoinListItemProps> = ({ token, onBuyPress, onSellPress, showBuyButton, showSellButton, tokenPrices, priceLoading }) => {
-  const colors = useThemeColors();
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const formatPrice = (price?: number) => {
     if (!price) return '$0,00';
     return formatUSD(price, true, price < 0.01 ? 6 : 2);
@@ -255,6 +256,8 @@ const SwapModal: React.FC<SwapModalProps> = ({
   quote,
   sellableTokens = []
 }) => {
+  const { theme } = useTheme();
+  const colors = theme.colors;
   // Debug log khi props thay đổi
   React.useEffect(() => {
     if (visible) {
@@ -684,25 +687,25 @@ const SwapModal: React.FC<SwapModalProps> = ({
             {/* Quote Display */}
             {loading && amount ? (
               <View style={{
-                backgroundColor: '#fef3c7',
+                backgroundColor: theme.isDark ? '#451a03' : '#fef3c7',
                 borderRadius: 12,
                 padding: 16,
                 marginBottom: 24,
                 flexDirection: 'row',
                 alignItems: 'center',
               }}>
-                <ActivityIndicator size="small" color="#d97706" style={{ marginRight: 12 }} />
+                <ActivityIndicator size="small" color={theme.isDark ? '#fed7aa' : '#d97706'} style={{ marginRight: 12 }} />
                 <View>
                   <Text style={{
                     fontSize: 14,
-                    color: '#92400e',
+                    color: theme.isDark ? '#fed7aa' : '#92400e',
                     marginBottom: 4,
                   }}>
                     Đang tính toán giá...
                   </Text>
                   <Text style={{
                     fontSize: 12,
-                    color: '#a16207',
+                    color: theme.isDark ? '#fed7aa' : '#a16207',
                   }}>
                     Vui lòng chờ trong giây lát
                   </Text>
@@ -879,7 +882,8 @@ const SwapModal: React.FC<SwapModalProps> = ({
 export const SwapScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const [swapBloc] = useState(() => ServiceLocator.get<SwapBloc>('SwapBloc'));
   const [state, setState] = useState<SwapState>(new SwapInitialState());
   const [searchQuery, setSearchQuery] = useState('');

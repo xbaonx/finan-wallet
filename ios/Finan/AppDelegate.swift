@@ -1,6 +1,7 @@
 import Expo
 import React
 import ReactAppDependencyProvider
+import FBSDKCoreKit
 
 @UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
@@ -21,6 +22,12 @@ public class AppDelegate: ExpoAppDelegate {
     reactNativeFactory = factory
     bindReactNativeFactory(factory)
 
+    // Initialize Facebook SDK
+    ApplicationDelegate.shared.application(
+      application,
+      didFinishLaunchingWithOptions: launchOptions
+    )
+
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
     factory.startReactNative(
@@ -38,6 +45,12 @@ public class AppDelegate: ExpoAppDelegate {
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
+    // Handle Facebook SDK URL first
+    if ApplicationDelegate.shared.application(app, open: url, options: options) {
+      return true
+    }
+    
+    // Then handle other deep links
     return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
   }
 

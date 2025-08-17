@@ -11,14 +11,16 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/types';
-import { useThemeColors } from '../../core/theme';
+import { useTheme } from '../../core/theme';
 import { WalletOnboardingBloc } from '../blocs/wallet_onboarding_bloc';
 import { CreateWalletEvent } from '../blocs/wallet_onboarding_event';
 import { WalletOnboardingState, WalletOnboardingLoading, WalletCreatedState, WalletOnboardingError } from '../blocs/wallet_onboarding_state';
 import { ServiceLocator } from '../../core/di/service_locator';
+import { FacebookAnalyticsService } from '../../core/services/facebook_analytics_service';
 
 type CreateWalletScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CreateWallet'>;
 
@@ -27,7 +29,8 @@ interface Props {
 }
 
 export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
-  const colors = useThemeColors();
+  const { theme } = useTheme();
+  const colors = theme.colors;
   const styles = createStyles(colors);
   const [walletName, setWalletName] = useState('Ví của tôi');
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +97,15 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
         { text: 'Chưa', style: 'cancel' },
         { 
           text: 'Đã sao lưu', 
-          onPress: () => {
+          onPress: async () => {
+            // Track wallet creation with Facebook Analytics
+            try {
+              const facebookAnalytics = FacebookAnalyticsService.getInstance();
+              await facebookAnalytics.trackWalletCreated('new');
+            } catch (error) {
+              console.error('Facebook Analytics tracking error:', error);
+            }
+            
             // Navigate to PIN setup after wallet creation
             navigation.navigate('SetupPin');
           }
@@ -124,13 +135,14 @@ export const CreateWalletScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
 
-          <View style={styles.warningBox}>
-            <Text style={styles.warningTitle}>⚠️ Quan trọng</Text>
-            <Text style={styles.warningText}>
-              • Không chia sẻ cụm từ này với bất kỳ ai{'\n'}
-              • Lưu trữ ở nơi an toàn, ngoại tuyến{'\n'}
-              • Mất cụm từ = mất toàn bộ tài sản
-            </Text>
+          <View style={[styles.warningCard, { backgroundColor: theme.isDark ? '#451a03' : '#fef3c7', borderColor: theme.isDark ? '#92400e' : '#f59e0b' }]}>
+            <MaterialIcons name="warning" size={32} color={theme.isDark ? '#fed7aa' : '#f59e0b'} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.warningTitle, { color: theme.isDark ? '#fed7aa' : '#92400e' }]}>Quan trọng!</Text>
+              <Text style={[styles.warningText, { color: theme.isDark ? '#fed7aa' : '#92400e' }]}>
+                Cụm từ khôi phục là cách duy nhất để khôi phục ví của bạn. Hãy lưu trữ nó ở nơi an toàn và không chia sẻ với bất kỳ ai.
+              </Text>
+            </View>
           </View>
 
           <View style={styles.mnemonicContainer}>
@@ -299,23 +311,21 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
-  warningBox: {
-    backgroundColor: '#fef3c7',
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#f59e0b',
   },
   warningTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#92400e',
     marginBottom: 8,
   },
   warningText: {
     fontSize: 14,
-    color: '#92400e',
     lineHeight: 20,
   },
   mnemonicContainer: {

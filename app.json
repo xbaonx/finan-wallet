@@ -71,6 +71,8 @@
       "eas": {
         "projectId": "finan-crypto-wallet"
       }
-    }
+    },
+    "facebookAppId": "1318489683620179",
+    "facebookDisplayName": "Finan Wallet"
   }
 }

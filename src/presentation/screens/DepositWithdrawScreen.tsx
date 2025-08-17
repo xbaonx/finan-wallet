@@ -12,6 +12,7 @@ import {
   Clipboard,
   Share,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -59,6 +60,13 @@ export const DepositWithdrawScreen: React.FC = () => {
   const [backendConnected, setBackendConnected] = useState<boolean>(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+
+  // Withdraw form states
+  const [showBankForm, setShowBankForm] = useState(false);
+  const [withdrawBankName, setWithdrawBankName] = useState('');
+  const [withdrawAccountNumber, setWithdrawAccountNumber] = useState('');
+  const [withdrawAccountName, setWithdrawAccountName] = useState('');
+  const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState(false);
 
   // Vietnam Banking Service
   const bankingService = VietnamBankingService.getInstance();
@@ -516,12 +524,108 @@ export const DepositWithdrawScreen: React.FC = () => {
     }
   };
 
-  const handleWithdraw = () => {
-    Alert.alert(
-      'Rút tiền',
-      `Tính năng rút ${amount} ${selectedToken} sẽ được phát triển trong phiên bản tiếp theo.`,
-      [{ text: 'Đóng' }]
-    );
+  const handleWithdraw = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số lượng USDT hợp lệ');
+      return;
+    }
+
+    // Kiểm tra có wallet address không
+    const getCurrentWalletUseCase = ServiceLocator.get('GetCurrentWalletUseCase') as GetCurrentWalletUseCase;
+    const currentWallet = await getCurrentWalletUseCase.execute();
+    
+    if (!currentWallet) {
+      Alert.alert('Lỗi', 'Không tìm thấy ví hiện tại. Vui lòng tạo hoặc import ví trước.');
+      return;
+    }
+
+    // Kiểm tra số dư USDT (giả lập - trong thực tế cần lấy từ blockchain)
+    const usdtBalance = 1000; // TODO: Lấy số dư thực từ blockchain
+    if (parseFloat(amount) > usdtBalance) {
+      Alert.alert('Lỗi', `Số dư không đủ. Số dư hiện tại: ${formatCrypto(usdtBalance, 'USDT', 2)}`);
+      return;
+    }
+
+    // Hiển thị form nhập thông tin ngân hàng
+    setShowBankForm(true);
+  };
+
+  const handleSubmitWithdraw = async () => {
+    // Validate bank form
+    if (!withdrawBankName.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập tên ngân hàng');
+      return;
+    }
+    if (!withdrawAccountNumber.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số tài khoản');
+      return;
+    }
+    if (!withdrawAccountName.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập tên chủ tài khoản');
+      return;
+    }
+
+    const getCurrentWalletUseCase = ServiceLocator.get('GetCurrentWalletUseCase') as GetCurrentWalletUseCase;
+    const currentWallet = await getCurrentWalletUseCase.execute();
+    
+    if (!currentWallet) {
+      Alert.alert('Lỗi', 'Không tìm thấy ví hiện tại');
+      return;
+    }
+
+    setIsSubmittingWithdraw(true);
+    
+    try {
+      // Tạo đơn hàng rút tiền
+      const orderData = {
+        walletAddress: currentWallet.address,
+        usdtAmount: parseFloat(amount),
+        vndAmount: vndAmount,
+        bankInfo: {
+          bankName: withdrawBankName.trim(),
+          accountNumber: withdrawAccountNumber.trim(),
+          accountName: withdrawAccountName.trim()
+        },
+        transactionInfo: `Rút ${amount} USDT từ mobile app - ${new Date().toLocaleString('vi-VN')}`
+      };
+
+      console.log('🔄 Đang tạo đơn hàng rút tiền:', orderData);
+      const response = await finanBackendService.createWithdrawOrder(orderData);
+      
+      console.log('✅ Đơn hàng rút tiền đã được tạo:', {
+        orderId: response.id,
+        status: response.status,
+        usdtAmount: response.usdtAmount,
+        vndAmount: response.vndAmount
+      });
+
+      // Reset form
+      setShowBankForm(false);
+      setWithdrawBankName('');
+      setWithdrawAccountNumber('');
+      setWithdrawAccountName('');
+      setAmount('');
+      setDisplayAmount('');
+      setVndAmount(0);
+      
+      // Thông báo thành công
+      Alert.alert(
+        'Thành công',
+        `Đơn hàng rút tiền đã được tạo!\n\nMã đơn hàng: ${response.id}\nSố tiền: ${formatCrypto(response.usdtAmount, 'USDT', 6)}\nSố tiền nhận: ${formatVND(response.vndAmount, true)}\n\nĐơn hàng sẽ được xử lý trong vòng 24 giờ làm việc.`,
+        [{ text: 'OK' }]
+      );
+      
+    } catch (error) {
+      console.error('❌ Lỗi tạo đơn hàng rút tiền:', error);
+      Alert.alert(
+        'Lỗi',
+        'Không thể tạo đơn hàng rút tiền. Vui lòng kiểm tra kết nối mạng và thử lại.\n\n' + 
+        (error instanceof Error ? error.message : 'Lỗi không xác định'),
+        [{ text: 'Đóng' }]
+      );
+    } finally {
+      setIsSubmittingWithdraw(false);
+    }
   };
 
   const styles = StyleSheet.create({
@@ -1039,12 +1143,156 @@ export const DepositWithdrawScreen: React.FC = () => {
     },
     copyableContainer: {
       flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-      justifyContent: 'flex-end',
-    },
-    detailCopyIcon: {
       marginLeft: 8,
+      flex: 1,
+      lineHeight: 18,
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: 12,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cancelButton: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    confirmButton: {
+      backgroundColor: colors.primary,
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+    cancelButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    confirmButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: 'white',
+    },
+    // Missing styles
+    detailCopyIcon: {
+      marginLeft: 4,
+    },
+    modalContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalCloseButton: {
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    modalHeaderSpacer: {
+      width: 40,
+    },
+    modalContent: {
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+    },
+    withdrawSummaryCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    withdrawSummaryTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    withdrawSummaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    withdrawSummaryLabel: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    withdrawSummaryValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    bankFormCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    bankFormTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    inputGroup: {
+      marginBottom: 16,
+    },
+    inputLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    bankInput: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      fontSize: 16,
+      color: colors.text,
+    },
+    withdrawNotice: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      backgroundColor: '#FEF3C7',
+      padding: 12,
+      borderRadius: 8,
+      marginTop: 16,
+    },
+    withdrawNoticeText: {
+      fontSize: 13,
+      color: '#92400E',
+      marginLeft: 8,
+      flex: 1,
+      lineHeight: 18,
     },
   });
 
@@ -1313,6 +1561,113 @@ export const DepositWithdrawScreen: React.FC = () => {
           </ScrollView>
         </View>
       )}
+
+      {/* Bank Form Modal for Withdraw */}
+      <Modal
+        visible={showBankForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowBankForm(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowBankForm(false)}
+            >
+              <MaterialIcons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Thông tin ngân hàng</Text>
+            <View style={styles.modalHeaderSpacer} />
+          </View>
+
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.withdrawSummaryCard}>
+              <Text style={styles.withdrawSummaryTitle}>Thông tin rút tiền</Text>
+              <View style={styles.withdrawSummaryRow}>
+                <Text style={styles.withdrawSummaryLabel}>Số tiền rút:</Text>
+                <Text style={styles.withdrawSummaryValue}>{formatCrypto(parseFloat(amount || '0'), 'USDT', 2)}</Text>
+              </View>
+              <View style={styles.withdrawSummaryRow}>
+                <Text style={styles.withdrawSummaryLabel}>Số tiền nhận:</Text>
+                <Text style={[styles.withdrawSummaryValue, styles.highlightAmount]}>{formatVND(vndAmount || 0)}</Text>
+              </View>
+              <View style={styles.withdrawSummaryRow}>
+                <Text style={styles.withdrawSummaryLabel}>Tỷ giá:</Text>
+                <Text style={styles.withdrawSummaryValue}>{formatVND(exchangeRate - 600)}/USDT</Text>
+              </View>
+            </View>
+
+            <View style={styles.bankFormCard}>
+              <Text style={styles.bankFormTitle}>Thông tin tài khoản nhận</Text>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tên ngân hàng *</Text>
+                <TextInput
+                  style={styles.bankInput}
+                  placeholder="VD: Vietcombank, BIDV, Techcombank..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={withdrawBankName}
+                  onChangeText={setWithdrawBankName}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Số tài khoản *</Text>
+                <TextInput
+                  style={styles.bankInput}
+                  placeholder="Nhập số tài khoản"
+                  placeholderTextColor={colors.textSecondary}
+                  value={withdrawAccountNumber}
+                  onChangeText={setWithdrawAccountNumber}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tên chủ tài khoản *</Text>
+                <TextInput
+                  style={styles.bankInput}
+                  placeholder="Họ và tên chủ tài khoản"
+                  placeholderTextColor={colors.textSecondary}
+                  value={withdrawAccountName}
+                  onChangeText={setWithdrawAccountName}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.withdrawNotice}>
+                <MaterialIcons name="info" size={20} color={colors.warning} />
+                <Text style={styles.withdrawNoticeText}>
+                  Đơn hàng rút tiền sẽ được xử lý trong vòng 24 giờ làm việc. 
+                  Vui lòng kiểm tra kỹ thông tin tài khoản trước khi xác nhận.
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setShowBankForm(false)}
+            >
+              <Text style={styles.cancelButtonText}>Hủy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton, isSubmittingWithdraw && styles.disabledButton]}
+              onPress={handleSubmitWithdraw}
+              disabled={isSubmittingWithdraw}
+            >
+              {isSubmittingWithdraw ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.confirmButtonText}>Xác nhận rút tiền</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };

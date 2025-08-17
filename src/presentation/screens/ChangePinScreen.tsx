@@ -193,49 +193,20 @@ export const ChangePinScreen: React.FC<Props> = ({ navigation }) => {
     if (step !== 'new') return null;
 
     return (
-      <View style={styles.pinLengthContainer}>
-        <Text style={[styles.pinLengthLabel, { color: colors.textSecondary }]}>Độ dài mã PIN mới:</Text>
-        <View style={styles.pinLengthOptions}>
-          <TouchableOpacity
-            style={[
-              styles.pinLengthOption,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-              pinLength === 4 && [styles.pinLengthOptionSelected, { borderColor: colors.primary, backgroundColor: colors.primary }],
-            ]}
-            onPress={() => {
-              setPinLength(4);
-              setNewPin('');
-            }}
-          >
-            <Text style={[
-              styles.pinLengthOptionText,
-              { color: colors.textSecondary },
-              pinLength === 4 && [styles.pinLengthOptionTextSelected, { color: colors.surface }],
-            ]}>
-              4 số
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.pinLengthOption,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-              pinLength === 6 && [styles.pinLengthOptionSelected, { borderColor: colors.primary, backgroundColor: colors.primary }],
-            ]}
-            onPress={() => {
-              setPinLength(6);
-              setNewPin('');
-            }}
-          >
-            <Text style={[
-              styles.pinLengthOptionText,
-              { color: colors.textSecondary },
-              pinLength === 6 && [styles.pinLengthOptionTextSelected, { color: colors.surface }],
-            ]}>
-              6 số
-            </Text>
-          </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.pinLengthOption}
+        onPress={() => {
+          const newLength = pinLength === 4 ? 6 : 4;
+          setPinLength(newLength);
+          setNewPin('');
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.checkbox, { borderColor: colors.primary }]}>
+          {pinLength === 4 && <MaterialIcons name="check" size={16} color={colors.primary} />}
         </View>
-      </View>
+        <Text style={[styles.optionText, { color: colors.text }]}>Sử dụng PIN 4 số</Text>
+      </TouchableOpacity>
     );
   };
 
@@ -244,37 +215,42 @@ export const ChangePinScreen: React.FC<Props> = ({ navigation }) => {
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['', '0', '⌫'],
+      ['', '0', 'backspace'],
     ];
 
     return (
       <View style={styles.numberPad}>
         {numbers.map((row, rowIndex) => (
           <View key={rowIndex} style={styles.numberRow}>
-            {row.map((number, colIndex) => (
-              <TouchableOpacity
-                key={colIndex}
-                style={[
-                  styles.numberButton,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  number === '' && styles.numberButtonEmpty,
-                ]}
-                onPress={() => {
-                  if (number === '⌫') {
-                    handleDeletePress();
-                  } else if (number !== '') {
-                    handleNumberPress(number);
-                  }
-                }}
-                disabled={number === '' || isLoading}
-              >
-                {number === '⌫' ? (
-                  <MaterialIcons name="backspace" size={24} color={colors.textSecondary} />
-                ) : (
-                  <Text style={[styles.numberButtonText, { color: colors.text }]}>{number}</Text>
-                )}
-              </TouchableOpacity>
-            ))}
+            {row.map((item, itemIndex) => {
+              if (item === '') {
+                return <View key={itemIndex} style={styles.numberButton} />;
+              }
+              
+              if (item === 'backspace') {
+                return (
+                  <TouchableOpacity
+                    key={itemIndex}
+                    style={[styles.numberButton, { backgroundColor: colors.surface }]}
+                    onPress={handleDeletePress}
+                    disabled={getCurrentPin().length === 0}
+                  >
+                    <MaterialIcons name="backspace" size={24} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                );
+              }
+
+              return (
+                <TouchableOpacity
+                  key={itemIndex}
+                  style={[styles.numberButton, { backgroundColor: colors.surface }]}
+                  onPress={() => handleNumberPress(item)}
+                  disabled={getCurrentPin().length >= getTargetLength()}
+                >
+                  <Text style={[styles.numberText, { color: colors.text }]}>{item}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         ))}
       </View>
@@ -284,30 +260,42 @@ export const ChangePinScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <LogoComponent size="small" style={{ marginRight: 8 }} />
+          <Text style={[styles.title, { color: colors.text }]}>
+            {getTitle()}
+          </Text>
+        </View>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          {getSubtitle()}
+        </Text>
+        
+        {renderPinLengthSelector()}
+      </View>
+
+      <View style={styles.content}>
+        {renderPinDots()}
+        {renderNumberPad()}
+      </View>
+
+      {step !== 'current' && (
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (step === 'confirm') {
+              setStep('new');
+              setConfirmPin('');
+            } else if (step === 'new') {
+              setStep('current');
+              setNewPin('');
+              setConfirmPin('');
+            }
+          }}
           activeOpacity={0.8}
         >
           <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <LogoComponent size="small" style={{ marginRight: 8 }} />
-          <Text style={[styles.title, { color: colors.text }]}>Đổi mã PIN</Text>
-        </View>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.pinSection}>
-          <Text style={[styles.pinTitle, { color: colors.text }]}>{getTitle()}</Text>
-          <Text style={[styles.pinSubtitle, { color: colors.textSecondary }]}>{getSubtitle()}</Text>
-          
-          {renderPinDots()}
-          {renderPinLengthSelector()}
-        </View>
-
-        {renderNumberPad()}
-      </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -320,59 +308,40 @@ const createStyles = (colors: any) => StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingBottom: 20,
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    position: 'relative',
-    alignItems: 'center',
-  },
-  backButton: {
-    position: 'absolute',
-    left: 24,
-    top: 10,
-    zIndex: 1,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  pinSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 50,
-  },
-  pinTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  pinSubtitle: {
+  subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
+    lineHeight: 22,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
   },
   pinDotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 30,
+    marginBottom: 60,
   },
   pinDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.border,
     marginHorizontal: 8,
@@ -381,64 +350,56 @@ const createStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  pinLengthContainer: {
+  pinLengthOption: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginTop: 20,
-  },
-  pinLengthLabel: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 15,
-  },
-  pinLengthOptions: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  pinLengthOption: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
   },
-  pinLengthOptionSelected: {
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
     borderColor: colors.primary,
-    backgroundColor: colors.primary,
+    borderRadius: 4,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
-  pinLengthOptionText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+  optionText: {
+    fontSize: 16,
+    color: colors.text,
     fontWeight: '500',
   },
-  pinLengthOptionTextSelected: {
-    color: colors.surface,
-  },
   numberPad: {
-    paddingBottom: 30,
+    alignItems: 'center',
+    marginBottom: 40,
   },
   numberRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 20,
   },
   numberButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 15,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  numberButtonEmpty: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
-  numberButtonText: {
+  numberText: {
     fontSize: 24,
     fontWeight: '600',
     color: colors.text,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 24,
+    zIndex: 1,
   },
 });
