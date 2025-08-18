@@ -92,8 +92,8 @@ android {
         applicationId 'com.finan.cryptowallet'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "2.1.0"
+        versionCode 4
+        versionName "2.2.0"
     }
     signingConfigs {
         debug {
@@ -103,12 +103,10 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
-                storeFile file(MYAPP_RELEASE_STORE_FILE)
-                storePassword MYAPP_RELEASE_STORE_PASSWORD
-                keyAlias MYAPP_RELEASE_KEY_ALIAS
-                keyPassword MYAPP_RELEASE_KEY_PASSWORD
-            }
+            storeFile file('finan-release-key.keystore')
+            storePassword 'ngaymainha123'
+            keyAlias 'finan-key-alias'
+            keyPassword 'ngaymainha123'
         }
     }
     buildTypes {

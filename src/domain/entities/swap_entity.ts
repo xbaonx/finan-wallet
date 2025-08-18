@@ -46,6 +46,7 @@ export interface SwapTransaction {
   data: string;
   value: string;
   gas: string;
+  gasLimit: string;
   gasPrice: string;
   fromAmount?: string;  // Thêm để tracking amount trong result
   toAmount?: string;    // Thêm để tracking amount trong result

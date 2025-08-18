@@ -70,33 +70,43 @@ export class UTMTrackingService {
         try {
           console.log('📊 [DEBUG] Attempting to get Play Install Referrer...');
           console.log('📊 [DEBUG] PlayInstallReferrer available:', !!PlayInstallReferrer);
-          const referrerInfo = await PlayInstallReferrer.getInstallReferrer();
-          console.log('📊 [DEBUG] Full referrerInfo:', JSON.stringify(referrerInfo, null, 2));
           
-          if (referrerInfo && referrerInfo.installReferrer) {
-            console.log('📊 Raw Install Referrer:', referrerInfo.installReferrer);
-            
-            // Decode referrer và parse UTM
-            const decodedReferrer = decodeURIComponent(referrerInfo.installReferrer);
-            console.log('📊 Decoded Install Referrer:', decodedReferrer);
-            
-            // Parse UTM từ referrer (format: utm_source=...&utm_medium=...)
-            const parsedUTM = this.parseUTMFromReferrer(decodedReferrer);
-            console.log('📊 [DEBUG] Parsed UTM from referrer:', JSON.stringify(parsedUTM, null, 2));
-            
-            if (parsedUTM.utm_source) {
-              utmData = {
-                ...parsedUTM,
-                install_date: new Date().toISOString(),
-                platform: Platform.OS,
-                is_first_install: true
-              };
-              utmSource = 'play_install_referrer';
-              console.log('📊 Install tracked with UTM from Play Install Referrer:', utmData);
-            } else {
-              console.warn('⚠️ [DEBUG] No utm_source found in parsed UTM data');
-            }
-          }
+          // Sử dụng callback API của react-native-play-install-referrer v1.1.9
+          await new Promise<void>((resolve) => {
+            PlayInstallReferrer.getInstallReferrerInfo((installReferrerInfo: any, error: any) => {
+              if (!error && installReferrerInfo) {
+                console.log('📊 [DEBUG] Full referrerInfo:', JSON.stringify(installReferrerInfo, null, 2));
+                console.log('📊 Raw Install Referrer:', installReferrerInfo.installReferrer);
+                
+                // Decode referrer và parse UTM
+                const decodedReferrer = decodeURIComponent(installReferrerInfo.installReferrer);
+                console.log('📊 Decoded Install Referrer:', decodedReferrer);
+                
+                // Parse UTM từ referrer (format: utm_source=...&utm_medium=...)
+                const parsedUTM = this.parseUTMFromReferrer(decodedReferrer);
+                console.log('📊 [DEBUG] Parsed UTM from referrer:', JSON.stringify(parsedUTM, null, 2));
+                
+                if (parsedUTM.utm_source) {
+                  utmData = {
+                    ...parsedUTM,
+                    install_date: new Date().toISOString(),
+                    platform: Platform.OS,
+                    is_first_install: true
+                  };
+                  utmSource = 'play_install_referrer';
+                  console.log('📊 Install tracked with UTM from Play Install Referrer:', utmData);
+                } else {
+                  console.warn('⚠️ [DEBUG] No utm_source found in parsed UTM data');
+                }
+              } else {
+                console.warn('⚠️ Failed to get Play Install Referrer:', error);
+                if (error) {
+                  console.warn('⚠️ [DEBUG] Referrer error details:', JSON.stringify(error, null, 2));
+                }
+              }
+              resolve();
+            });
+          });
         } catch (referrerError) {
           console.warn('⚠️ Failed to get Play Install Referrer:', referrerError);
           console.warn('⚠️ [DEBUG] Referrer error details:', JSON.stringify(referrerError, null, 2));

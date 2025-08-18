@@ -299,6 +299,7 @@ export class OneInchApiService {
         data: response.data,
         value: response.value || '0',
         gas: response.gas || '300000', // Đảm bảo gas limit đủ
+        gasLimit: response.gas || '300000',
         gasPrice: recommendedGasTipCap // Gán gas tip cap cao hơn mức tối thiểu yêu cầu (100000000)
       };
     } catch (error) {
@@ -396,6 +397,7 @@ export class OneInchApiService {
         data: response.tx.data,
         value: response.tx.value || '0',
         gas: response.tx.gas || '600000', // Đảm bảo gas limit đủ cho swap (thường cao hơn approve)
+        gasLimit: response.tx.gas || '600000',
         gasPrice: recommendedGasTipCap, // Gán gas tip cap cao hơn mức tối thiểu yêu cầu (100000000)
         fromAmount: fromAmount, // Thêm để tracking trong SwapResult
         toAmount: response.dstAmount ? this.convertFromWei(response.dstAmount, toToken.decimals) : '0' // Lấy từ 1inch dstAmount

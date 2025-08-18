@@ -3,7 +3,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { BalanceChange } from './balance_monitoring_service';
-import { formatCrypto } from '../../core/utils/number_formatter';
+import { VietnameseNumberFormatter } from '../../core/utils/number_formatter';
 
 // Cấu hình notification behavior
 Notifications.setNotificationHandler({
@@ -99,7 +99,7 @@ export class NotificationService {
       const sign = isIncrease ? '+' : '';
       
       // Format amount theo chuẩn Việt Nam
-      const formattedAmount = formatCrypto(Math.abs(change.difference));
+      const formattedAmount = VietnameseNumberFormatter.formatCrypto(Math.abs(change.difference), change.token.symbol);
       
       const title = `${emoji} Finan Wallet`;
       const body = `Bạn vừa ${action} ${sign}${formattedAmount} ${change.token.symbol}`;
@@ -158,7 +158,7 @@ export class NotificationService {
         title = '📈 Finan Wallet';
         if (increases.length === 1) {
           const change = increases[0];
-          const formattedAmount = formatCrypto(change.difference);
+          const formattedAmount = VietnameseNumberFormatter.formatCrypto(change.difference, change.token.symbol);
           body = `Bạn vừa nhận +${formattedAmount} ${change.token.symbol}`;
         } else {
           body = `Bạn vừa nhận ${increases.length} giao dịch`;
@@ -167,7 +167,7 @@ export class NotificationService {
         title = '📉 Finan Wallet';
         if (decreases.length === 1) {
           const change = decreases[0];
-          const formattedAmount = formatCrypto(Math.abs(change.difference));
+          const formattedAmount = VietnameseNumberFormatter.formatCrypto(Math.abs(change.difference), change.token.symbol);
           body = `Bạn vừa gửi ${formattedAmount} ${change.token.symbol}`;
         } else {
           body = `Bạn vừa gửi ${decreases.length} giao dịch`;

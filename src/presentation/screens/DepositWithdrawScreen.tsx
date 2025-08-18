@@ -719,7 +719,7 @@ export const DepositWithdrawScreen: React.FC = () => {
     inputContainer: {
       marginBottom: 20,
     },
-    inputLabel: {
+    inputLabelFirst: {
       fontSize: 14,
       fontWeight: '500',
       color: colors.text,

@@ -2,6 +2,8 @@ import { TokenRepository } from '../domain/repositories/token_repository';
 import { WalletRepository } from '../domain/repositories/wallet_repository';
 import { TokenRepositoryImpl } from '../data/repositories/token_repository_impl';
 import { WalletRepositoryImpl } from '../data/repositories/wallet_repository_impl';
+import { CryptoService } from '../data/services/crypto_service';
+import { SecureStorageService } from '../data/services/secure_storage_service';
 
 // Interface cho container
 interface Container {
@@ -56,7 +58,9 @@ export function registerRepositories(
   }
   
   if (!walletRepoInstance && !container.resolve('walletRepository')) {
-    walletRepoInstance = new WalletRepositoryImpl();
+    const cryptoService = new CryptoService();
+    const secureStorageService = new SecureStorageService();
+    walletRepoInstance = new WalletRepositoryImpl(cryptoService, secureStorageService);
     container.register('walletRepository', walletRepoInstance);
   }
 }

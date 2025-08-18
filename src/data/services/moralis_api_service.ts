@@ -1,4 +1,5 @@
 import { TokenEntity, WalletBalance } from '../../domain/entities/token_entity';
+import { getTokenLogoUri } from '../../core/utils/token_icon_utils';
 import { API_CONFIG, COMMON_TOKENS } from '../../core/config/api_config';
 import { 
   MoralisNativeBalanceResponse, 
@@ -194,7 +195,7 @@ export class MoralisApiService {
         const ethBalance = (parseFloat(nativeBalanceData.balance) / Math.pow(10, 18));
         if (ethBalance > 0.001) { // Only show if balance > 0.001 ETH
           // Sử dụng URL logo từ danh sách token tĩnh cho BNB
-          const bnbLogoUrl = getTokenLogoUri('0x0000000000000000000000000000000000000000');
+          const bnbLogoUrl = getTokenLogoUri('0x0000000000000000000000000000000000000000', 'BNB');
           console.log(`Native BNB logo URL: ${bnbLogoUrl}`);
           
           tokens.push({
@@ -263,7 +264,7 @@ export class MoralisApiService {
           }
 
           // Sử dụng danh sách token phổ biến để lấy logo
-          const tokenLogoUrl = getTokenLogoUri(token.token_address);
+          const tokenLogoUrl = getTokenLogoUri(token.token_address, token.symbol);
           console.log(`Logo for ${token.symbol} (${token.token_address}): ${tokenLogoUrl}`);
           
           tokens.push({
@@ -380,7 +381,7 @@ export class MoralisApiService {
         } catch (error) {
           console.warn(`Error fetching price for ${address}:`, error);
           // Cache 0 price to avoid repeated failed requests
-          priceCacheService.setCachedPrice(address, 0, 'UNKNOWN');
+          unifiedCacheService.setCachedPrice(address, 0, 'UNKNOWN');
         }
       });
       
